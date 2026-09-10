@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Red Light Stopwatch</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --accent: #ff3b3b;
+    --accent-dim: #7a1f1f;
+    --green: #3bffa0;
+    --text: #eef0f4;
+    --muted: #9aa0ab;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 12px 60px;
+  }
+  h1 {
+    font-size: 1.3rem;
+    font-weight: 600;
+    margin: 0 0 4px;
+  }
+  p.sub {
+    color: var(--muted);
+    margin: 0 0 18px;
+    font-size: 0.9rem;
+    text-align: center;
+    max-width: 480px;
+  }
+  .stage {
+    position: relative;
+    width: 100%;
+    max-width: 640px;
+    aspect-ratio: 4 / 3;
+    background: #000;
+    border-radius: 12px;
+    overflow: hidden;
+    touch-action: none;
+    box-shadow: 0 0 0 1px #2a2e37;
+  }
+  video, canvas.overlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+  }
+  video { object-fit: cover; }
+  canvas.overlay { pointer-events: none; }
+  .roi-box {
+    position: absolute;
+    border: 2px solid var(--accent);
+    background: rgba(255,59,59,0.12);
+    cursor: move;
+    touch-action: none;
+  }
+  .roi-box .handle {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    right: -9px;
+    bottom: -9px;
+    background: var(--accent);
+    border-radius: 50%;
+    cursor: nwse-resize;
+    touch-action: none;
+  }
+  .status-pill {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: rgba(0,0,0,0.55);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+  .dot.on { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+  .dot.off { background: var(--green); box-shadow: 0 0 8px var(--green); }
+
+  .panel {
+    margin-top: 18px;
+    width: 100%;
+    max-width: 640px;
+    background: var(--panel);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .timer {
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    font-size: 3rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin: 4px 0 14px;
+  }
+  .row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 14px;
+  }
+  button {
+    background: #232733;
+    color: var(--text);
+    border: 1px solid #343a48;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #1a0000; }
+  button.secondary { background: var(--green); border-color: var(--green); color: #002417; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .settings {
+    border-top: 1px solid #262b36;
+    padding-top: 12px;
+    display: grid;
+    gap: 10px;
+  }
+  .settings label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+    color: var(--muted);
+    gap: 10px;
+  }
+  input[type="range"] { flex: 1; }
+  .settings span.val { color: var(--text); min-width: 34px; text-align: right; }
+
+  .log {
+    margin-top: 10px;
+    font-size: 0.85rem;
+    color: var(--muted);
+    text-align: center;
+  }
+  .result {
+    font-size: 1.4rem;
+    color: var(--green);
+    font-weight: 700;
+    text-align: center;
+    margin-top: 4px;
+    min-height: 1.6em;
+  }
+</style>
+</head>
+<body>
+
+<h1>Red Light Stopwatch</h1>
+<p class="sub">Point your camera at the light, drag the box over it, press Start, then press Begin Timing when you're ready. The timer stops automatically the moment red disappears from the box.</p>
+
+<div class="stage" id="stage">
+  <video id="video" autoplay playsinline muted></video>
+  <canvas class="overlay" id="overlay"></canvas>
+  <div class="roi-box" id="roiBox" style="left:35%; top:35%; width:30%; height:30%;">
+    <div class="handle" id="resizeHandle"></div>
+  </div>
+  <div class="status-pill">
+    <div class="dot" id="statusDot"></div>
+    <span id="statusText">Camera off</span>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="timer" id="timerDisplay">0.00s</div>
+  <div class="result" id="resultText"></div>
+
+  <div class="row">
+    <button id="camBtn" class="primary">Start Camera</button>
+    <button id="beginBtn" class="secondary" disabled>Begin Timing</button>
+    <button id="resetBtn" disabled>Reset</button>
+  </div>
+
+  <div class="settings">
+    <label>Red sensitivity
+      <input type="range" id="sensSlider" min="1" max="10" value="5">
+      <span class="val" id="sensVal">5</span>
+    </label>
+    <label>Min red coverage in box (%)
+      <input type="range" id="coverSlider" min="1" max="80" value="15">
+      <span class="val" id="coverVal">15</span>
+    </label>
+    <label>Debounce (ms, avoids flicker false-stops)
+      <input type="range" id="debounceSlider" min="0" max="1000" step="50" value="150">
+      <span class="val" id="debounceVal">150</span>
+    </label>
+  </div>
+
+  <div class="log" id="log">Camera not started yet.</div>
+</div>
+
+<script>
+(() => {
+  const video = document.getElementById('video');
+  const overlay = document.getElementById('overlay');
+  const octx = overlay.getContext('2d', { willReadFrequently: true });
+  const stage = document.getElementById('stage');
+  const roiBox = document.getElementById('roiBox');
+  const resizeHandle = document.getElementById('resizeHandle');
+  const camBtn = document.getElementById('camBtn');
+  const beginBtn = document.getElementById('beginBtn');
+  const resetBtn = document.getElementById('resetBtn');
+  const timerDisplay = document.getElementById('timerDisplay');
+  const resultText = document.getElementById('resultText');
+  const statusDot = document.getElementById('statusDot');
+  const statusText = document.getElementById('statusText');
+  const logEl = document.getElementById('log');
+
+  const sensSlider = document.getElementById('sensSlider');
+  const coverSlider = document.getElementById('coverSlider');
+  const debounceSlider = document.getElementById('debounceSlider');
+  const sensVal = document.getElementById('sensVal');
+  const coverVal = document.getElementById('coverVal');
+  const debounceVal = document.getElementById('debounceVal');
+
+  sensSlider.oninput = () => sensVal.textContent = sensSlider.value;
+  coverSlider.oninput = () => coverVal.textContent = coverSlider.value;
+  debounceSlider.oninput = () => debounceVal.textContent = debounceSlider.value;
+
+  let stream = null;
+  let rafId = null;
+  let timing = false;
+  let startTime = 0;
+  let elapsedInterval = null;
+  let redCurrentlyOn = false;
+  let pendingOffSince = null;
+  let hasSeenRedSinceBegin = false;
+
+  // ---------- Camera ----------
+  camBtn.addEventListener('click', async () => {
+    if (stream) {
+      stopCamera();
+      return;
+    }
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' },
+        audio: false
+      });
+      video.srcObject = stream;
+      await video.play();
+      camBtn.textContent = 'Stop Camera';
+      beginBtn.disabled = false;
+      statusText.textContent = 'Watching...';
+      log('Camera started. Position the red box over the light.');
+      resizeOverlay();
+      loop();
+    } catch (err) {
+      log('Camera error: ' + err.message);
+    }
+  });
+
+  function stopCamera() {
+    if (rafId) cancelAnimationFrame(rafId);
+    if (stream) {
+      stream.getTracks().forEach(t => t.stop());
+      stream = null;
+    }
+    camBtn.textContent = 'Start Camera';
+    beginBtn.disabled = true;
+    statusText.textContent = 'Camera off';
+    statusDot.className = 'dot';
+    stopTimingInternal(false);
+  }
+
+  function resizeOverlay() {
+    overlay.width = stage.clientWidth;
+    overlay.height = stage.clientHeight;
+  }
+  window.addEventListener('resize', resizeOverlay);
+
+  // ---------- Draggable / resizable ROI box ----------
+  let dragging = false, resizing = false;
+  let dragOffsetX = 0, dragOffsetY = 0;
+
+  function pointerPos(e) {
+    const t = e.touches ? e.touches[0] : e;
+    return { x: t.clientX, y: t.clientY };
+  }
+
+  roiBox.addEventListener('mousedown', startDrag);
+  roiBox.addEventListener('touchstart', startDrag, { passive: true });
+  resizeHandle.addEventListener('mousedown', startResize);
+  resizeHandle.addEventListener('touchstart', startResize, { passive: true });
+
+  function startDrag(e) {
+    if (e.target === resizeHandle) return;
+    dragging = true;
+    const p = pointerPos(e);
+    const rect = roiBox.getBoundingClientRect();
+    dragOffsetX = p.x - rect.left;
+    dragOffsetY = p.y - rect.top;
+    e.stopPropagation();
+  }
+  function startResize(e) {
+    resizing = true;
+    e.stopPropagation();
+  }
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('touchmove', onMove, { passive: false });
+  document.addEventListener('mouseup', () => { dragging = false; resizing = false; });
+  document.addEventListener('touchend', () => { dragging = false; resizing = false; });
+
+  function onMove(e) {
+    if (!dragging && !resizing) return;
+    const p = pointerPos(e);
+    const stageRect = stage.getBoundingClientRect();
+
+    if (dragging) {
+      let x = p.x - stageRect.left - dragOffsetX;
+      let y = p.y - stageRect.top - dragOffsetY;
+      x = Math.max(0, Math.min(x, stageRect.width - roiBox.offsetWidth));
+      y = Math.max(0, Math.min(y, stageRect.height - roiBox.offsetHeight));
+      roiBox.style.left = (x / stageRect.width * 100) + '%';
+      roiBox.style.top = (y / stageRect.height * 100) + '%';
+      e.preventDefault();
+    } else if (resizing) {
+      const boxRect = roiBox.getBoundingClientRect();
+      let w = p.x - boxRect.left;
+      let h = p.y - boxRect.top;
+      w = Math.max(20, Math.min(w, stageRect.right - boxRect.left));
+      h = Math.max(20, Math.min(h, stageRect.bottom - boxRect.top));
+      roiBox.style.width = (w / stageRect.width * 100) + '%';
+      roiBox.style.height = (h / stageRect.height * 100) + '%';
+      e.preventDefault();
+    }
+  }
+
+  // ---------- Red detection loop ----------
+  function loop() {
+    rafId = requestAnimationFrame(loop);
+    if (video.readyState < 2) return;
+
+    resizeOverlay();
+    octx.clearRect(0, 0, overlay.width, overlay.height);
+
+    // Map ROI box (CSS %) to video pixel coords
+    const stageRect = stage.getBoundingClientRect();
+    const boxRect = roiBox.getBoundingClientRect();
+
+    const scaleX = video.videoWidth / stageRect.width;
+    const scaleY = video.videoHeight / stageRect.height;
+
+    const sx = Math.round((boxRect.left - stageRect.left) * scaleX);
+    const sy = Math.round((boxRect.top - stageRect.top) * scaleY);
+    const sw = Math.max(1, Math.round(boxRect.width * scaleX));
+    const sh = Math.max(1, Math.round(boxRect.height * scaleY));
+
+    // Draw sampled region to a small offscreen canvas for pixel reading
+    const sampleCanvas = loop._sampleCanvas || (loop._sampleCanvas = document.createElement('canvas'));
+    const sampleCtx = sampleCanvas.getContext('2d', { willReadFrequently: true });
+    sampleCanvas.width = Math.min(sw, 120);
+    sampleCanvas.height = Math.min(sh, 90);
+    sampleCtx.drawImage(video, sx, sy, sw, sh, 0, 0, sampleCanvas.width, sampleCanvas.height);
+
+    let data;
+    try {
+      data = sampleCtx.getImageData(0, 0, sampleCanvas.width, sampleCanvas.height).data;
+    } catch (e) {
+      return; // e.g. tainted canvas from cross-origin, shouldn't happen with getUserMedia
+    }
+
+    const sensitivity = parseInt(sensSlider.value, 10); // 1..10, higher = looser red definition
+    const redDominance = 60 - sensitivity * 4; // threshold gap R must exceed G/B by
+    const minBrightness = 40;
+
+    let redPixels = 0;
+    const totalPixels = data.length / 4;
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i], g = data[i+1], b = data[i+2];
+      if (r > minBrightness && (r - g) > redDominance && (r - b) > redDominance) {
+        redPixels++;
+      }
+    }
+    const coveragePct = (redPixels / totalPixels) * 100;
+    const minCoverage = parseFloat(coverSlider.value);
+    const isRedNow = coveragePct >= minCoverage;
+
+    updateRedState(isRedNow);
+
+    // Draw overlay box for visual feedback matching CSS box (not needed, CSS box already visible)
+  }
+
+  function updateRedState(isRedNow) {
+    statusDot.className = 'dot ' + (isRedNow ? 'on' : 'off');
+    statusText.textContent = isRedNow ? 'RED detected' : 'No red';
+
+    if (isRedNow) {
+      pendingOffSince = null;
+      if (!redCurrentlyOn) {
+        redCurrentlyOn = true;
+        if (timing) hasSeenRedSinceBegin = true;
+      }
+      return;
+    }
+
+    // isRedNow is false
+    if (redCurrentlyOn) {
+      const debounceMs = parseInt(debounceSlider.value, 10);
+      if (pendingOffSince === null) {
+        pendingOffSince = performance.now();
+      } else if (performance.now() - pendingOffSince >= debounceMs) {
+        redCurrentlyOn = false;
+        pendingOffSince = null;
+        if (timing && hasSeenRedSinceBegin) {
+          stopTimingInternal(true);
+        }
+      }
+    }
+  }
+
+  // ---------- Timing ----------
+  beginBtn.addEventListener('click', () => {
+    if (timing) return;
+    timing = true;
+    hasSeenRedSinceBegin = false;
+    startTime = performance.now();
+    resultText.textContent = '';
+    beginBtn.disabled = true;
+    resetBtn.disabled = false;
+    log('Timing started. Waiting for red to disappear (must be red first, then go off)...');
+    elapsedInterval = setInterval(() => {
+      const elapsed = (performance.now() - startTime) / 1000;
+      timerDisplay.textContent = elapsed.toFixed(2) + 's';
+    }, 30);
+  });
+
+  function stopTimingInternal(showResult) {
+    if (!timing) return;
+    timing = false;
+    clearInterval(elapsedInterval);
+    const elapsed = (performance.now() - startTime) / 1000;
+    timerDisplay.textContent = elapsed.toFixed(2) + 's';
+    if (showResult) {
+      resultText.textContent = 'Stopped: ' + elapsed.toFixed(2) + 's';
+      log('Red disappeared — timer stopped automatically.');
+    }
+    beginBtn.disabled = !stream;
+  }
+
+  resetBtn.addEventListener('click', () => {
+    timing = false;
+    clearInterval(elapsedInterval);
+    timerDisplay.textContent = '0.00s';
+    resultText.textContent = '';
+    resetBtn.disabled = true;
+    beginBtn.disabled = !stream;
+    hasSeenRedSinceBegin = false;
+    log('Reset. Ready to begin timing again.');
+  });
+
+  function log(msg) {
+    logEl.textContent = msg;
+  }
+})();
+</script>
+
+</body>
+</html>
