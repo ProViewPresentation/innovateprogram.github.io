@@ -163,12 +163,55 @@
     margin-top: 4px;
     min-height: 1.6em;
   }
+
+  .calib-banner {
+    display: none;
+    background: #1f2430;
+    border: 1px solid #343a48;
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+  .calib-banner.active { display: block; }
+  .calib-step-title {
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .calib-desc {
+    color: var(--muted);
+    font-size: 0.88rem;
+    margin-bottom: 10px;
+  }
+  .calib-readout {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 0.85rem;
+  }
+  .swatch {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    border: 1px solid #444;
+    flex-shrink: 0;
+  }
+  .calib-warning {
+    color: #ffb84d;
+    font-size: 0.82rem;
+    margin-top: 6px;
+    display: none;
+  }
+  .calib-warning.show { display: block; }
+  .calib-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+  button.calib-btn { background: #2b3a2f; border-color: #3f5a45; }
+  button.ghost { background: transparent; }
 </style>
 </head>
 <body>
 
 <h1>Red Light Stopwatch</h1>
-<p class="sub">Point your camera at the light, drag the box over it, press Start, then press Begin Timing when you're ready. The timer stops automatically the moment red disappears from the box.</p>
+<p class="sub">Point your camera at the light, drag the box over it, then use "Test Red / Calibrate" to tune detection to your exact light. Press Begin Timing when ready — the timer stops automatically the moment red disappears.</p>
 
 <div class="stage" id="stage">
   <video id="video" autoplay playsinline muted></video>
@@ -188,8 +231,23 @@
 
   <div class="row">
     <button id="camBtn" class="primary">Start Camera</button>
+    <button id="calibBtn" class="calib-btn" disabled>Test Red / Calibrate</button>
     <button id="beginBtn" class="secondary" disabled>Begin Timing</button>
     <button id="resetBtn" disabled>Reset</button>
+  </div>
+
+  <div class="calib-banner" id="calibBanner">
+    <div class="calib-step-title" id="calibTitle">Step 1 of 2: Show the red light ON</div>
+    <div class="calib-desc" id="calibDesc">Make sure the box is over the light and the light is currently ON. Then press "Capture ON".</div>
+    <div class="calib-readout">
+      <div class="swatch" id="calibSwatch" style="background:#000;"></div>
+      <span id="calibReadoutText">Avg color in box: —</span>
+    </div>
+    <div class="calib-warning" id="calibWarning">This doesn't look red enough — check the box is positioned over the light, or move it closer.</div>
+    <div class="calib-buttons">
+      <button id="calibCaptureBtn" class="secondary">Capture ON</button>
+      <button id="calibCancelBtn" class="ghost">Cancel</button>
+    </div>
   </div>
 
   <div class="settings">
@@ -247,6 +305,23 @@
   let pendingOffSince = null;
   let hasSeenRedSinceBegin = false;
 
+  // ---------- Calibration state ----------
+  const calibBtn = document.getElementById('calibBtn');
+  const calibBanner = document.getElementById('calibBanner');
+  const calibTitle = document.getElementById('calibTitle');
+  const calibDesc = document.getElementById('calibDesc');
+  const calibSwatch = document.getElementById('calibSwatch');
+  const calibReadoutText = document.getElementById('calibReadoutText');
+  const calibWarning = document.getElementById('calibWarning');
+  const calibCaptureBtn = document.getElementById('calibCaptureBtn');
+  const calibCancelBtn = document.getElementById('calibCancelBtn');
+
+  let calibrating = false;
+  let calibStep = 0; // 1 = capture ON, 2 = capture OFF
+  let calibOnSample = null;  // {avgR, avgG, avgB, redPct at loose threshold}
+  let calibOffSample = null;
+  let lastBoxAvg = null; // updated every frame while camera running: {r,g,b}
+
   // ---------- Camera ----------
   camBtn.addEventListener('click', async () => {
     if (stream) {
@@ -262,6 +337,7 @@
       await video.play();
       camBtn.textContent = 'Stop Camera';
       beginBtn.disabled = false;
+      calibBtn.disabled = false;
       statusText.textContent = 'Watching...';
       log('Camera started. Position the red box over the light.');
       resizeOverlay();
@@ -279,9 +355,11 @@
     }
     camBtn.textContent = 'Start Camera';
     beginBtn.disabled = true;
+    calibBtn.disabled = true;
     statusText.textContent = 'Camera off';
     statusDot.className = 'dot';
     stopTimingInternal(false);
+    if (calibrating) endCalibration(null);
   }
 
   function resizeOverlay() {
@@ -387,19 +465,136 @@
 
     let redPixels = 0;
     const totalPixels = data.length / 4;
+    let sumR = 0, sumG = 0, sumB = 0;
     for (let i = 0; i < data.length; i += 4) {
       const r = data[i], g = data[i+1], b = data[i+2];
+      sumR += r; sumG += g; sumB += b;
       if (r > minBrightness && (r - g) > redDominance && (r - b) > redDominance) {
         redPixels++;
       }
     }
+    lastBoxAvg = {
+      r: sumR / totalPixels,
+      g: sumG / totalPixels,
+      b: sumB / totalPixels
+    };
+
     const coveragePct = (redPixels / totalPixels) * 100;
     const minCoverage = parseFloat(coverSlider.value);
     const isRedNow = coveragePct >= minCoverage;
 
-    updateRedState(isRedNow);
+    if (!calibrating) {
+      updateRedState(isRedNow);
+    } else {
+      updateCalibReadout();
+    }
+  }
 
-    // Draw overlay box for visual feedback matching CSS box (not needed, CSS box already visible)
+  // ---------- Calibration wizard ----------
+  calibBtn.addEventListener('click', () => {
+    if (!stream) return;
+    calibrating = true;
+    calibStep = 1;
+    calibOnSample = null;
+    calibOffSample = null;
+    calibBanner.classList.add('active');
+    calibTitle.textContent = 'Step 1 of 2: Show the red light ON';
+    calibDesc.textContent = 'Make sure the box is over the light and the light is currently ON. Then press "Capture ON".';
+    calibCaptureBtn.textContent = 'Capture ON';
+    calibWarning.classList.remove('show');
+    beginBtn.disabled = true;
+    log('Calibration started.');
+  });
+
+  calibCancelBtn.addEventListener('click', () => {
+    endCalibration('Calibration cancelled. Previous settings kept.');
+  });
+
+  function endCalibration(msg) {
+    calibrating = false;
+    calibStep = 0;
+    calibBanner.classList.remove('active');
+    beginBtn.disabled = !stream;
+    if (msg) log(msg);
+  }
+
+  function updateCalibReadout() {
+    if (!lastBoxAvg) return;
+    const { r, g, b } = lastBoxAvg;
+    calibSwatch.style.background = `rgb(${r|0},${g|0},${b|0})`;
+    calibReadoutText.textContent = `Avg color in box: R ${r|0}  G ${g|0}  B ${b|0}`;
+
+    if (calibStep === 1) {
+      const dominance = r - Math.max(g, b);
+      if (dominance < 15 || r < 50) {
+        calibWarning.classList.add('show');
+      } else {
+        calibWarning.classList.remove('show');
+      }
+    } else {
+      calibWarning.classList.remove('show');
+    }
+  }
+
+  calibCaptureBtn.addEventListener('click', () => {
+    if (!lastBoxAvg) return;
+
+    if (calibStep === 1) {
+      const { r, g, b } = lastBoxAvg;
+      const dominance = r - Math.max(g, b);
+      if (dominance < 10 || r < 40) {
+        calibWarning.classList.add('show');
+        log('That doesn\'t look red yet — reposition the box over the lit light and try again.');
+        return;
+      }
+      calibOnSample = { r, g, b };
+      calibStep = 2;
+      calibTitle.textContent = 'Step 2 of 2: Turn the red light OFF (unplug it)';
+      calibDesc.textContent = 'Now unplug or turn off the light, keep the box in the same spot, then press "Capture OFF".';
+      calibCaptureBtn.textContent = 'Capture OFF';
+      calibWarning.classList.remove('show');
+      log('ON sample captured. Now turn the light off.');
+    } else if (calibStep === 2) {
+      const { r, g, b } = lastBoxAvg;
+      calibOffSample = { r, g, b };
+      finishCalibration();
+    }
+  });
+
+  function finishCalibration() {
+    const on = calibOnSample;
+    const off = calibOffSample;
+
+    // Dominance of red-vs-max(g,b) for ON sample, used to set redDominance threshold
+    const onDominance = on.r - Math.max(on.g, on.b);
+    const offDominance = off.r - Math.max(off.g, off.b);
+
+    // Set the dominance threshold halfway between ON and OFF dominance,
+    // but never below a small floor to avoid noise false-positives.
+    let thresholdDominance = (onDominance + offDominance) / 2;
+    thresholdDominance = Math.max(8, Math.min(thresholdDominance, onDominance - 3));
+
+    // Convert threshold dominance back into the sensitivity slider's scale:
+    // redDominance = 60 - sensitivity*4  =>  sensitivity = (60 - redDominance)/4
+    let sensitivity = Math.round((60 - thresholdDominance) / 4);
+    sensitivity = Math.max(1, Math.min(10, sensitivity));
+
+    sensSlider.value = sensitivity;
+    sensVal.textContent = sensitivity;
+
+    // Re-derive minBrightness style check is fixed in code (40); if ON red is dim, lower coverage req instead.
+    // Set minimum coverage conservatively: require at least 10%, or lower if ON sample is a small/dim light.
+    let coverage = 15;
+    if (on.r < 90) coverage = 10;
+    coverSlider.value = coverage;
+    coverVal.textContent = coverage;
+
+    calibBanner.classList.remove('active');
+    calibrating = false;
+    calibStep = 0;
+    beginBtn.disabled = !stream;
+
+    log(`Calibration complete — tuned for this light (ON: R${on.r|0}/G${on.g|0}/B${on.b|0}, OFF: R${off.r|0}/G${off.g|0}/B${off.b|0}). You can fine-tune further with the sliders if needed.`);
   }
 
   function updateRedState(isRedNow) {
