@@ -211,7 +211,7 @@
 <body>
 
 <h1>Red Light Stopwatch</h1>
-<p class="sub">Point your camera at the light, drag the box over it, then use "Test Red / Calibrate" to tune detection to your exact light. Press Begin Timing when ready — the timer stops automatically the moment red disappears.</p>
+<p class="sub">Point your camera at the light, drag the box over it, then use "Test Red / Calibrate" to tune detection to your exact light. Press "Arm" to start watching — the stopwatch starts automatically the instant red appears, and stops automatically the instant it disappears.</p>
 
 <div class="stage" id="stage">
   <video id="video" autoplay playsinline muted></video>
@@ -232,7 +232,7 @@
   <div class="row">
     <button id="camBtn" class="primary">Start Camera</button>
     <button id="calibBtn" class="calib-btn" disabled>Test Red / Calibrate</button>
-    <button id="beginBtn" class="secondary" disabled>Begin Timing</button>
+    <button id="beginBtn" class="secondary" disabled>Arm (Auto Start/Stop)</button>
     <button id="resetBtn" disabled>Reset</button>
   </div>
 
@@ -298,12 +298,13 @@
 
   let stream = null;
   let rafId = null;
+  let armed = false;
   let timing = false;
   let startTime = 0;
   let elapsedInterval = null;
   let redCurrentlyOn = false;
   let pendingOffSince = null;
-  let hasSeenRedSinceBegin = false;
+  let pendingOnSince = null;
 
   // ---------- Calibration state ----------
   const calibBtn = document.getElementById('calibBtn');
@@ -358,6 +359,8 @@
     calibBtn.disabled = true;
     statusText.textContent = 'Camera off';
     statusDot.className = 'dot';
+    armed = false;
+    beginBtn.textContent = 'Arm (Auto Start/Stop)';
     stopTimingInternal(false);
     if (calibrating) endCalibration(null);
   }
@@ -493,6 +496,11 @@
   // ---------- Calibration wizard ----------
   calibBtn.addEventListener('click', () => {
     if (!stream) return;
+    if (armed) {
+      armed = false;
+      beginBtn.textContent = 'Arm (Auto Start/Stop)';
+      if (timing) stopTimingInternal(false);
+    }
     calibrating = true;
     calibStep = 1;
     calibOnSample = null;
@@ -601,45 +609,70 @@
     statusDot.className = 'dot ' + (isRedNow ? 'on' : 'off');
     statusText.textContent = isRedNow ? 'RED detected' : 'No red';
 
+    const debounceMs = parseInt(debounceSlider.value, 10);
+
     if (isRedNow) {
       pendingOffSince = null;
       if (!redCurrentlyOn) {
-        redCurrentlyOn = true;
-        if (timing) hasSeenRedSinceBegin = true;
+        // Debounce the ON transition too, so a single stray red pixel spike doesn't auto-start early
+        if (pendingOnSince === null) {
+          pendingOnSince = performance.now();
+        } else if (performance.now() - pendingOnSince >= debounceMs) {
+          redCurrentlyOn = true;
+          pendingOnSince = null;
+          if (armed && !timing) {
+            startTimingInternal();
+          }
+        }
       }
       return;
     }
 
     // isRedNow is false
+    pendingOnSince = null;
     if (redCurrentlyOn) {
-      const debounceMs = parseInt(debounceSlider.value, 10);
       if (pendingOffSince === null) {
         pendingOffSince = performance.now();
       } else if (performance.now() - pendingOffSince >= debounceMs) {
         redCurrentlyOn = false;
         pendingOffSince = null;
-        if (timing && hasSeenRedSinceBegin) {
+        if (armed && timing) {
           stopTimingInternal(true);
         }
       }
     }
   }
 
-  // ---------- Timing ----------
+  // ---------- Arm / Timing ----------
   beginBtn.addEventListener('click', () => {
-    if (timing) return;
+    if (!armed) {
+      armed = true;
+      redCurrentlyOn = false;
+      pendingOnSince = null;
+      pendingOffSince = null;
+      resultText.textContent = '';
+      timerDisplay.textContent = '0.00s';
+      beginBtn.textContent = 'Disarm';
+      resetBtn.disabled = false;
+      log('Armed — watching for red to appear. Stopwatch will auto-start the instant it does.');
+    } else {
+      armed = false;
+      if (timing) stopTimingInternal(false);
+      beginBtn.textContent = 'Arm (Auto Start/Stop)';
+      log('Disarmed.');
+    }
+  });
+
+  function startTimingInternal() {
     timing = true;
-    hasSeenRedSinceBegin = false;
     startTime = performance.now();
     resultText.textContent = '';
-    beginBtn.disabled = true;
-    resetBtn.disabled = false;
-    log('Timing started. Waiting for red to disappear (must be red first, then go off)...');
+    log('Red appeared — stopwatch started. Waiting for red to disappear...');
     elapsedInterval = setInterval(() => {
       const elapsed = (performance.now() - startTime) / 1000;
       timerDisplay.textContent = elapsed.toFixed(2) + 's';
     }, 30);
-  });
+  }
 
   function stopTimingInternal(showResult) {
     if (!timing) return;
@@ -649,9 +682,8 @@
     timerDisplay.textContent = elapsed.toFixed(2) + 's';
     if (showResult) {
       resultText.textContent = 'Stopped: ' + elapsed.toFixed(2) + 's';
-      log('Red disappeared — timer stopped automatically.');
+      log('Red disappeared — stopwatch stopped automatically. Still armed for the next cycle.');
     }
-    beginBtn.disabled = !stream;
   }
 
   resetBtn.addEventListener('click', () => {
@@ -659,10 +691,15 @@
     clearInterval(elapsedInterval);
     timerDisplay.textContent = '0.00s';
     resultText.textContent = '';
-    resetBtn.disabled = true;
-    beginBtn.disabled = !stream;
-    hasSeenRedSinceBegin = false;
-    log('Reset. Ready to begin timing again.');
+    redCurrentlyOn = false;
+    pendingOnSince = null;
+    pendingOffSince = null;
+    if (armed) {
+      log('Reset. Still armed — watching for red to appear again.');
+    } else {
+      resetBtn.disabled = true;
+      log('Reset.');
+    }
   });
 
   function log(msg) {
