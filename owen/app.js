@@ -1,4 +1,13 @@
-let dbUrl = localStorage.getItem("rc_dbUrl") || "https://innovateprogram-fd00c-default-rtdb.firebaseio.com";
+const DEFAULT_DB_URL = "https://innovate-website-f3fe9-default-rtdb.firebaseio.com";
+const OLD_DB_URL = "https://innovateprogram-fd00c-default-rtdb.firebaseio.com";
+
+// One-time migration: if a browser has the old project's URL cached, clear it
+// so the new default takes over instead of silently pointing at the old project.
+if (localStorage.getItem("rc_dbUrl") === OLD_DB_URL) {
+  localStorage.removeItem("rc_dbUrl");
+}
+
+let dbUrl = localStorage.getItem("rc_dbUrl") || DEFAULT_DB_URL;
 let selectedDeviceId = null;
 let selectedTabId = null;
 let devicesPollTimer = null;
