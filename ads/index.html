@@ -1,0 +1,1065 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <!-- Change the version number for changes to the sheet, change the first number for large
+changes, change the small number for bug fixes and small changers -->
+    <title>Display V2.12</title>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        background: #000;
+        overflow: hidden;
+        cursor: none;
+      }
+      #preload {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: #0a0a0a;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+        transition: opacity 0.5s ease;
+      }
+      #preload.out {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #preload-logo {
+        font-family: system-ui, sans-serif;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: #444;
+      }
+      #preload-title {
+        font-family: system-ui, sans-serif;
+        font-size: 20px;
+        font-weight: 600;
+        color: #fff;
+        letter-spacing: 0.02em;
+      }
+      #preload-track {
+        width: 280px;
+        height: 2px;
+        background: #222;
+        border-radius: 1px;
+        overflow: hidden;
+      }
+      #preload-fill {
+        height: 100%;
+        width: 0%;
+        background: #fff;
+        border-radius: 1px;
+        transition: width 0.2s ease;
+      }
+      #preload-status {
+        font-family: system-ui, sans-serif;
+        font-size: 11px;
+        color: #444;
+        letter-spacing: 0.05em;
+      }
+      .canvas {
+        position: fixed;
+        inset: 0;
+        background: #000;
+        /* Canvas transitions for notification mode */
+        transition:
+          top 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+          height 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+          width 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+          left 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+          border-radius 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      .slide {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .slide.cut {
+        transition: none !important;
+      }
+      .slide.fade {
+        transition: opacity 800ms ease;
+      }
+      .slide.visible {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .slide img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+      .slide video {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+      .yt-wrap {
+        position: absolute;
+        inset: 0;
+      }
+      .yt-wrap iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+        display: block;
+      }
+
+      /* ── Notification overlay (full-screen mode) ── */
+      #notification-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 200;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+      }
+      #notification-screen.visible {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      /* Colored background behind the shrunken canvas — fills whole screen */
+      #notification-bg {
+        position: fixed;
+        inset: 0;
+        z-index: 199;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+      }
+      #notification-bg.visible {
+        opacity: 1;
+      }
+
+      /* Message text — bottom zone, height and font-size set entirely by JS */
+      #notification-text {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 201;
+        font-family: system-ui, Arial, sans-serif;
+        font-weight: 900;
+        line-height: 1.05;
+        text-align: center;
+        letter-spacing: -0.02em;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transform: translateY(40px);
+        opacity: 0;
+        transition:
+          transform 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.1s,
+          opacity 0.4s ease 0.1s;
+      }
+      #notification-text.visible {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="preload">
+      <div id="preload-logo">Innovate</div>
+      <div id="preload-title">Loading…</div>
+      <div id="preload-track"><div id="preload-fill"></div></div>
+      <div id="preload-status">Connecting</div>
+    </div>
+
+    <!-- Notification background layer (colored fill behind canvas) -->
+    <div id="notification-bg"></div>
+
+    <!-- Main canvas — gets repositioned when notification is active -->
+    <div
+      class="canvas"
+      id="canvas"
+      style="
+        opacity: 0;
+        transition:
+          opacity 0.5s ease,
+          top 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+          height 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+          width 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+          left 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+          border-radius 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+      "></div>
+
+    <!-- Notification text at the bottom -->
+    <div id="notification-text"></div>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+      import {
+        getDatabase,
+        ref,
+        onValue,
+        get,
+        set,
+        update,
+        onDisconnect
+      } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyBgV9PoUFut3FPc0iChFNm2-h6-Uc5z6s0",
+        authDomain: "infinity-service-b2f10.firebaseapp.com",
+        databaseURL: "https://infinity-service-b2f10-default-rtdb.firebaseio.com",
+        projectId: "infinity-service-b2f10",
+        storageBucket: "infinity-service-b2f10.firebasestorage.app",
+        messagingSenderId: "805770674259",
+        appId: "1:805770674259:web:bcc520979e6772fda5c6a6"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getDatabase(app);
+
+      const canvas = document.getElementById("canvas");
+      const notifBg = document.getElementById("notification-bg");
+      const notifText = document.getElementById("notification-text");
+      const preload = document.getElementById("preload");
+      const preloadFill = document.getElementById("preload-fill");
+      const preloadStatus = document.getElementById("preload-status");
+      const preloadTitle = document.getElementById("preload-title");
+
+      // ── State ──────────────────────────────────────────────────────────────────────
+      let mediaCache = {};
+      let slideEls = [];
+      let presentation = null;
+      let slideIndex = 0;
+      let slideTimer = null;
+      let ytPlayers = {};
+      let ytApiReady = false;
+      let ytApiLoading = false;
+      let pendingYtInits = [];
+      let monitorName = null;
+      let lastCommandAt = 0;
+      let currentPid = null; // presentation ID currently showing
+      let syncEnabled = false;
+
+      // Unique ID so we can ignore our own Firebase sync writes
+      const DISPLAY_ID = Math.random().toString(36).slice(2);
+
+      // ── Helpers ────────────────────────────────────────────────────────────────────
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+      function setProgress(pct, label) {
+        preloadFill.style.width = Math.min(100, Math.max(0, pct)) + "%";
+        if (label != null) preloadStatus.textContent = label;
+      }
+      function dismissPreload() {
+        preload.classList.add("out");
+        canvas.style.opacity = "1";
+        setTimeout(() => (preload.style.display = "none"), 600);
+      }
+
+      // ── Monitor identity ───────────────────────────────────────────────────────────
+      function resetToFirstRun() {
+        localStorage.clear();
+        if ("caches" in window)
+          caches
+            .keys()
+            .then((ks) => ks.forEach((k) => caches.delete(k)))
+            .catch(() => {});
+        window.location.reload();
+      }
+
+      async function getMonitorName() {
+        try {
+          const q = new URL(window.location.href).searchParams.get("monitor");
+          if (q && q.trim()) {
+            localStorage.setItem("monitorName", q.trim());
+            return q.trim();
+          }
+        } catch (e) {}
+        const ls = localStorage.getItem("monitorName");
+        if (ls && ls.trim()) {
+          const snap = await get(ref(db, `monitors/${encodeURIComponent(ls.trim())}`)).catch(() => null);
+          if (snap && snap.val() === null) {
+            resetToFirstRun();
+            return null;
+          }
+          return ls.trim();
+        }
+        const p = prompt("Enter monitor name:", "");
+        if (p && p.trim()) {
+          localStorage.setItem("monitorName", p.trim());
+          return p.trim();
+        }
+        return null;
+      }
+
+      // ── Presence ───────────────────────────────────────────────────────────────────
+      async function registerPresence(name) {
+        if (!name) return;
+        const mRef = ref(db, `monitors/${encodeURIComponent(name)}`);
+        const payload = { status: "online", lastSeen: Date.now(), resolution: `${screen.width}x${screen.height}` };
+        await update(mRef, payload).catch(() => {});
+        onDisconnect(mRef)
+          .update({ status: "offline", lastSeen: Date.now() })
+          .catch(() => {});
+        setInterval(async () => {
+          try {
+            await update(mRef, { lastSeen: Date.now(), resolution: `${screen.width}x${screen.height}` });
+          } catch (e) {}
+        }, 5000);
+      }
+
+      // ── Resolve which presentation to show ─────────────────────────────────────────
+      async function resolvePresentation(name) {
+        if (!name) return { p: null, pid: null };
+        const monSnap = await get(ref(db, `monitors/${encodeURIComponent(name)}`));
+        const monData = monSnap.val();
+        let pid = null;
+        if (typeof monData === "string") pid = monData;
+        else if (monData && typeof monData === "object")
+          pid = monData.presentation || monData.assigned || monData.pid || null;
+
+        if (pid) {
+          const snap = await get(ref(db, `presentations/${pid}`));
+          const p = snap.val();
+          if (p && p.items && p.items.length) return { p, pid };
+        }
+
+        const activeSnap = await get(ref(db, "activePresentation"));
+        const activeId = activeSnap.val();
+        if (activeId) {
+          const snap = await get(ref(db, `presentations/${activeId}`));
+          const p = snap.val();
+          if (p && p.items && p.items.length) return { p, pid: activeId };
+        }
+
+        const curSnap = await get(ref(db, "presentations/current"));
+        return { p: curSnap.val(), pid: null };
+      }
+
+      // ── Sync state ─────────────────────────────────────────────────────────────────
+      function syncRef(pid) {
+        return ref(db, `syncState/${pid}`);
+      }
+
+      async function publishSync(idx) {
+        if (!syncEnabled || !currentPid) return;
+        try {
+          await set(syncRef(currentPid), { idx, startedAt: Date.now(), publisherId: DISPLAY_ID });
+        } catch (e) {}
+      }
+
+      async function readSync(pid, p) {
+        if (!syncEnabled || !pid || !p?.items) return { idx: 0, elapsed: 0, hasState: false };
+        try {
+          const snap = await get(syncRef(pid));
+          const s = snap.val();
+          if (!s || s.idx == null) return { idx: 0, elapsed: 0, hasState: false };
+          return { idx: s.idx, elapsed: Math.max(0, (Date.now() - s.startedAt) / 1000), hasState: true };
+        } catch (e) {
+          return { idx: 0, elapsed: 0, hasState: false };
+        }
+      }
+
+      // ── Sync listener ──────────────────────────────────────────────────────────────
+      let syncUnsub = null;
+      let syncPid = null;
+
+      async function ensureSyncListener(pid) {
+        if (syncUnsub) {
+          syncUnsub();
+          syncUnsub = null;
+        }
+        syncPid = null;
+        if (!pid) return;
+
+        let baseline = null;
+        try {
+          const snap = await get(syncRef(pid));
+          const s = snap.val();
+          if (s?.startedAt) baseline = s.startedAt;
+        } catch (e) {}
+
+        syncPid = pid;
+        syncUnsub = onValue(syncRef(pid), (snap) => {
+          const s = snap.val();
+          if (!s || s.idx == null) return;
+          if (s.startedAt === baseline) return;
+          baseline = s.startedAt;
+          if (s.publisherId === DISPLAY_ID) return;
+          if (!syncEnabled || !presentation) return;
+          const elapsed = Math.max(0, (Date.now() - s.startedAt) / 1000);
+          showSlide(presentation, s.idx, elapsed, false);
+        });
+      }
+
+      // ── Notification overlay ───────────────────────────────────────────────────────
+      const NOTIF_TEXT_MAX_H_PCT = 45;
+      const NOTIF_TEXT_MIN_H_PCT = 12;
+
+      let notifActive = false;
+
+      function applyOverlay(p, animate) {
+        const ov = p.overlay || {};
+        if (ov.visible && ov.text) {
+          showNotification(ov.text, ov.color || "#cc0000", ov.textColor || "#fff", animate);
+        } else {
+          hideNotification();
+        }
+      }
+
+      function showNotification(text, bgColor, textColor, animate) {
+        notifActive = true;
+
+        notifBg.style.background = bgColor;
+        notifBg.classList.add("visible");
+
+        // Set text first so we can measure it
+        notifText.style.color = textColor;
+        notifText.style.background = bgColor;
+        notifText.textContent = text;
+
+        // Fit text and get how tall the text block needs to be
+        const textHeightPx = fitNotifText();
+
+        // Available height for the video
+        const availH = window.innerHeight - textHeightPx;
+        const availW = window.innerWidth;
+
+        // Fit a 16:9 box inside the available space — no cropping, no black bars
+        const ratio = 16 / 9;
+        let vidW = availW;
+        let vidH = Math.round(vidW / ratio);
+        if (vidH > availH) {
+          vidH = availH;
+          vidW = Math.round(vidH * ratio);
+        }
+        const vidLeft = Math.round((availW - vidW) / 2);
+
+        canvas.style.top = "0";
+        canvas.style.left = vidLeft + "px";
+        canvas.style.right = "auto";
+        canvas.style.bottom = "auto";
+        canvas.style.width = vidW + "px";
+        canvas.style.height = vidH + "px";
+        canvas.style.borderRadius = "0";
+        canvas.style.overflow = "hidden";
+        canvas.style.zIndex = "200";
+
+        notifText.style.height = textHeightPx + "px";
+        notifText.classList.add("visible");
+      }
+
+      function hideNotification() {
+        if (!notifActive) return;
+        notifActive = false;
+
+        notifBg.classList.remove("visible");
+        notifText.classList.remove("visible");
+
+        canvas.style.top = "0";
+        canvas.style.left = "0";
+        canvas.style.right = "0";
+        canvas.style.bottom = "0";
+        canvas.style.width = "100%";
+        canvas.style.height = "100%";
+        canvas.style.borderRadius = "0";
+        canvas.style.overflow = "";
+        canvas.style.zIndex = "";
+      }
+
+      // Binary-search the largest font that fits width and the max-height budget.
+      // Returns the pixel height the text zone will occupy.
+      function fitNotifText() {
+        const el = notifText;
+        const screenW = window.innerWidth;
+        const screenH = window.innerHeight;
+        const maxH = Math.round((screenH * NOTIF_TEXT_MAX_H_PCT) / 100);
+        const minH = Math.round((screenH * NOTIF_TEXT_MIN_H_PCT) / 100);
+        const maxW = screenW * 0.96;
+
+        el.style.whiteSpace = "normal";
+        el.style.height = "auto";
+        el.style.padding = "2vh 2vw";
+
+        let lo = 24,
+          hi = Math.round(screenW * 0.25);
+        for (let i = 0; i < 14; i++) {
+          const mid = Math.round((lo + hi) / 2);
+          el.style.fontSize = mid + "px";
+          if (el.scrollWidth <= maxW && el.scrollHeight <= maxH) lo = mid;
+          else hi = mid - 1;
+        }
+        el.style.fontSize = lo + "px";
+
+        const renderedH = Math.max(minH, Math.min(maxH, el.scrollHeight + Math.round(screenH * 0.04)));
+        return renderedH;
+      }
+
+      window.addEventListener("resize", () => {
+        if (!notifActive) return;
+        const textHeightPx = fitNotifText();
+        const availH = window.innerHeight - textHeightPx;
+        const availW = window.innerWidth;
+        const ratio = 16 / 9;
+        let vidW = availW;
+        let vidH = Math.round(vidW / ratio);
+        if (vidH > availH) {
+          vidH = availH;
+          vidW = Math.round(vidH * ratio);
+        }
+        const vidLeft = Math.round((availW - vidW) / 2);
+        canvas.style.left = vidLeft + "px";
+        canvas.style.width = vidW + "px";
+        canvas.style.height = vidH + "px";
+        notifText.style.height = textHeightPx + "px";
+      });
+
+      // ── Slide cleanup & build ──────────────────────────────────────────────────────
+      function cleanupSlides() {
+        clearTimeout(slideTimer);
+        slideTimer = null;
+        canvas.querySelectorAll(".slide").forEach((s) => {
+          s.classList.remove("visible");
+          const v = s.querySelector("video");
+          if (v) {
+            try {
+              v.pause();
+              v.onended = null;
+            } catch (e) {}
+          }
+        });
+        ytPlayers = {};
+        slideEls = [];
+        canvas.innerHTML = "";
+      }
+
+      function buildSlides(p) {
+        cleanupSlides();
+        if (!p?.items?.length) return;
+        p.items.forEach((it, idx) => {
+          const m = mediaCache[it.mediaId];
+          const slide = document.createElement("div");
+          slide.className = "slide";
+          slide.dataset.idx = idx;
+          if (!m) {
+            slide.innerHTML = `<div style="color:#555;font-family:system-ui;font-size:20px">Missing media</div>`;
+          } else if (m.resource_type === "youtube") {
+            const wrap = document.createElement("div");
+            wrap.className = "yt-wrap";
+            const div = document.createElement("div");
+            div.id = `yt-${idx}`;
+            wrap.appendChild(div);
+            slide.appendChild(wrap);
+          } else if (m.resource_type === "image") {
+            const img = document.createElement("img");
+            img.src = m.url;
+            slide.appendChild(img);
+          } else {
+            const vid = document.createElement("video");
+            vid.src = m.url;
+            vid.preload = "auto";
+            vid.muted = true;
+            vid.setAttribute("playsinline", "");
+            slide.appendChild(vid);
+          }
+          canvas.appendChild(slide);
+          slideEls.push(slide);
+        });
+      }
+
+      // ── Wait helpers ───────────────────────────────────────────────────────────────
+      function waitForVideo(vid, startTime) {
+        return new Promise((resolve) => {
+          let done = false;
+          const finish = () => {
+            if (done) return;
+            done = true;
+            resolve();
+          };
+          const timeout = setTimeout(finish, 12000);
+          const checkReady = () => {
+            if (vid.readyState >= 3) {
+              clearTimeout(timeout);
+              finish();
+              return;
+            }
+            vid.addEventListener(
+              "canplay",
+              () => {
+                clearTimeout(timeout);
+                finish();
+              },
+              { once: true }
+            );
+          };
+          const seekAndWait = () => {
+            if (done) return;
+            try {
+              const st = startTime || 0;
+              if (st > 0 && isFinite(vid.duration) && st < vid.duration) vid.currentTime = st;
+            } catch (e) {}
+            checkReady();
+          };
+          if (vid.readyState >= 1) seekAndWait();
+          else vid.addEventListener("loadedmetadata", seekAndWait, { once: true });
+          vid.load();
+        });
+      }
+
+      function waitForImage(img) {
+        return new Promise((resolve) => {
+          if (img.complete && img.naturalWidth > 0) {
+            resolve();
+            return;
+          }
+          img.addEventListener("load", resolve, { once: true });
+          img.addEventListener("error", resolve, { once: true });
+        });
+      }
+
+      // ── Playback ───────────────────────────────────────────────────────────────────
+      function showSlide(p, idx, seekOffset, publish) {
+        clearTimeout(slideTimer);
+        slideTimer = null;
+        if (!p?.items?.length) return;
+        idx = ((idx % p.items.length) + p.items.length) % p.items.length;
+        slideIndex = idx;
+
+        const isCut = p.transition === "cut";
+        canvas.querySelectorAll(".slide").forEach((s) => {
+          if (parseInt(s.dataset.idx, 10) === idx) return;
+          s.classList.remove("visible");
+          const v = s.querySelector("video");
+          if (v) {
+            v.pause();
+            v.onended = null;
+          }
+          try {
+            ytPlayers[parseInt(s.dataset.idx, 10)]?.pauseVideo();
+          } catch (e) {}
+        });
+
+        const slide = canvas.querySelector(`.slide[data-idx="${idx}"]`);
+        if (!slide) return;
+        slide.className = "slide " + (isCut ? "cut" : "fade");
+        void slide.offsetWidth;
+        slide.classList.add("visible");
+
+        const item = p.items[idx];
+        const media = mediaCache[item.mediaId];
+        if (!media) {
+          scheduleNext(p);
+          return;
+        }
+
+        if (media.resource_type === "youtube") {
+          playYT(p, idx, item, media, seekOffset || 0, publish);
+        } else if (media.resource_type !== "image") {
+          const vid = slide.querySelector("video");
+          if (vid) playVideo(p, slide, vid, item, seekOffset || 0, publish);
+          else scheduleNext(p);
+        } else {
+          if (publish) publishSync(idx);
+          if (seekOffset && p.intervalMs) {
+            const remaining = Math.max(500, p.intervalMs - seekOffset * 1000);
+            slideTimer = setTimeout(() => advance(p), remaining);
+          } else {
+            scheduleNext(p);
+          }
+        }
+      }
+
+      function playVideo(p, slideEl, vid, item, seekOffset, publish) {
+        const itemStart = item.start || 0;
+        const seekTo = itemStart + (seekOffset || 0);
+        const end = item.end || null;
+        vid.onended = null;
+
+        const attemptPlay = () => {
+          try {
+            if (isFinite(vid.duration) && seekTo > 0 && seekTo < vid.duration) vid.currentTime = seekTo;
+            else if (seekTo === 0) vid.currentTime = 0;
+          } catch (e) {}
+
+          vid.muted = true;
+          vid
+            .play()
+            .then(() => {
+              vid.muted = false;
+              if (publish && syncEnabled && currentPid) {
+                const backdatedStart = Date.now() - (seekOffset || 0) * 1000;
+                set(syncRef(currentPid), {
+                  idx: slideIndex,
+                  startedAt: backdatedStart,
+                  publisherId: DISPLAY_ID
+                }).catch(() => {});
+              }
+              if (end && end > seekTo) {
+                const poll = () => {
+                  if (!slideEl.classList.contains("visible")) return;
+                  vid.currentTime >= end ? (vid.pause(), advance(p)) : requestAnimationFrame(poll);
+                };
+                requestAnimationFrame(poll);
+              } else {
+                vid.onended = () => advance(p);
+              }
+            })
+            .catch((err) => {
+              console.warn("Video play failed:", err);
+              scheduleNext(p);
+            });
+        };
+
+        if (vid.readyState >= 1) attemptPlay();
+        else {
+          vid.addEventListener("loadedmetadata", attemptPlay, { once: true });
+          vid.load();
+        }
+      }
+
+      function scheduleNext(p) {
+        clearTimeout(slideTimer);
+        slideTimer = null;
+        if (p.mode === "single") return;
+        slideTimer = setTimeout(() => advance(p), p.intervalMs || 5000);
+      }
+
+      function advance(p) {
+        clearTimeout(slideTimer);
+        slideTimer = null;
+        if (!p || p.mode === "single") return;
+        showSlide(p, slideIndex + 1, 0, true);
+      }
+
+      // ── YouTube ────────────────────────────────────────────────────────────────────
+      function loadYtApi(cb) {
+        if (ytApiReady) {
+          cb();
+          return;
+        }
+        pendingYtInits.push(cb);
+        if (ytApiLoading) return;
+        ytApiLoading = true;
+        window.onYouTubeIframeAPIReady = () => {
+          ytApiReady = true;
+          pendingYtInits.forEach((fn) => fn());
+          pendingYtInits = [];
+        };
+        const tag = document.createElement("script");
+        tag.src = "https://www.youtube.com/iframe_api";
+        document.head.appendChild(tag);
+      }
+
+      function playYT(p, idx, item, media, seekOffset, publish) {
+        const base = item.start ?? media.start ?? 0;
+        const itemStart = base;
+        const start = itemStart + (seekOffset || 0);
+        const end = item.end ?? media.end ?? null;
+
+        const publishYtSync = () => {
+          if (!publish || !syncEnabled || !currentPid) return;
+          const backdatedStart = Date.now() - (seekOffset || 0) * 1000;
+          set(syncRef(currentPid), {
+            idx: slideIndex,
+            startedAt: backdatedStart,
+            publisherId: DISPLAY_ID
+          }).catch(() => {});
+        };
+
+        loadYtApi(() => {
+          if (ytPlayers[idx]) {
+            const pl = ytPlayers[idx];
+            try {
+              pl.seekTo(start, true);
+              pl.unMute();
+              pl.setVolume(100);
+              pl.playVideo();
+            } catch (e) {}
+            publishYtSync();
+            if (end && end > start) pollYt(p, idx, pl, end);
+            return;
+          }
+          const divId = `yt-${idx}`;
+          if (!document.getElementById(divId)) return;
+          let ytSyncPublished = false;
+          new window.YT.Player(divId, {
+            videoId: media.ytId,
+            playerVars: {
+              autoplay: 1,
+              controls: 0,
+              disablekb: 1,
+              modestbranding: 1,
+              rel: 0,
+              start: Math.floor(start),
+              mute: 1,
+              playsinline: 1,
+              enablejsapi: 1,
+              iv_load_policy: 3,
+              fs: 0
+            },
+            events: {
+              onReady: (e) => {
+                ytPlayers[idx] = e.target;
+                e.target.mute();
+                try {
+                  e.target.seekTo(start, true);
+                } catch (err) {}
+                e.target.playVideo();
+                setTimeout(() => {
+                  try {
+                    e.target.unMute();
+                    e.target.setVolume(100);
+                  } catch (err) {}
+                }, 500);
+                if (end && end > start) pollYt(p, idx, e.target, end);
+              },
+              onStateChange: (e) => {
+                if (e.data === 0) advance(p);
+                if (e.data === 1) {
+                  if (!ytSyncPublished) {
+                    ytSyncPublished = true;
+                    publishYtSync();
+                  }
+                  setTimeout(() => {
+                    try {
+                      e.target.unMute();
+                      e.target.setVolume(100);
+                    } catch (err) {}
+                  }, 300);
+                }
+              },
+              onError: (e) => {
+                console.warn("YT error:", e.data);
+                advance(p);
+              }
+            }
+          });
+        });
+      }
+
+      function pollYt(p, idx, player, end) {
+        const check = () => {
+          const slide = canvas.querySelector(`.slide[data-idx="${idx}"]`);
+          if (!slide?.classList.contains("visible")) return;
+          try {
+            if (player.getCurrentTime() >= end) {
+              player.pauseVideo();
+              advance(p);
+              return;
+            }
+          } catch (e) {}
+          requestAnimationFrame(check);
+        };
+        requestAnimationFrame(check);
+      }
+
+      // ── Main load / reload ─────────────────────────────────────────────────────────
+      let currentPresentationKey = null;
+
+      async function loadPresentation(forceReload = false) {
+        const { p, pid } = await resolvePresentation(monitorName);
+
+        if (!p?.items?.length) {
+          setProgress(100, "No slides found");
+          await sleep(600);
+          dismissPreload();
+          return;
+        }
+
+        syncEnabled = !!p.syncPlayback;
+        currentPid = pid;
+
+        const key = JSON.stringify(p.items.map((i) => i.mediaId)) + p.name + p.intervalMs + p.transition;
+        if (!forceReload && key === currentPresentationKey) {
+          presentation = p;
+          applyOverlay(p, true);
+          await ensureSyncListener(syncEnabled ? pid : null);
+          return;
+        }
+        currentPresentationKey = key;
+
+        setProgress(5, "Fetching media…");
+        const mediaSnap = await get(ref(db, "media"));
+        mediaCache = mediaSnap.val() || {};
+
+        presentation = p;
+        buildSlides(p);
+
+        let loaded = 0;
+        const total = p.items.length;
+        await Promise.all(
+          p.items.map(async (it, idx) => {
+            const m = mediaCache[it.mediaId];
+            if (!m || m.resource_type === "youtube") {
+              loaded++;
+              setProgress(10 + (loaded / total) * 85, `${loaded}/${total}`);
+              return;
+            }
+            const slide = slideEls[idx];
+            if (m.resource_type === "image") {
+              await waitForImage(slide.querySelector("img"));
+            } else {
+              await waitForVideo(slide.querySelector("video"), it.start || 0);
+            }
+            loaded++;
+            setProgress(10 + (loaded / total) * 85, `${loaded}/${total}`);
+          })
+        );
+
+        setProgress(100, "Ready");
+        await sleep(200);
+        dismissPreload();
+        applyOverlay(p, true);
+
+        await ensureSyncListener(syncEnabled ? pid : null);
+
+        const { idx: startIdx, elapsed, hasState } = await readSync(pid, p);
+        const shouldPublish = syncEnabled && !hasState;
+        showSlide(p, startIdx, elapsed, shouldPublish);
+      }
+
+      // ── Firebase change listeners ──────────────────────────────────────────────────
+      let reloadDebounce = null;
+      function scheduleReload(force = false) {
+        clearTimeout(reloadDebounce);
+        reloadDebounce = setTimeout(() => loadPresentation(force), 350);
+      }
+
+      function attachListeners() {
+        const monKey = encodeURIComponent(monitorName);
+
+        onValue(ref(db, `monitors/${monKey}/command`), (snap) => {
+          const cmd = snap.val();
+          if (!cmd?.at || cmd.at <= lastCommandAt) return;
+          lastCommandAt = cmd.at;
+          if (cmd.cmd === "reloadPresentation") loadPresentation(true);
+        });
+
+        let monFirstFire = true;
+        onValue(ref(db, `monitors/${monKey}`), (snap) => {
+          if (monFirstFire) {
+            monFirstFire = false;
+            return;
+          }
+          if (snap.val() === null) {
+            resetToFirstRun();
+            return;
+          }
+          scheduleReload(false);
+        });
+
+        let watchedPid = null;
+        let presentationUnsub = null;
+
+        async function updatePresentationWatch() {
+          const monSnap = await get(ref(db, `monitors/${monKey}`));
+          const monData = monSnap.val();
+          let pid = null;
+          if (typeof monData === "string") pid = monData;
+          else if (monData && typeof monData === "object")
+            pid = monData.presentation || monData.assigned || monData.pid || null;
+
+          if (pid === watchedPid) return;
+          watchedPid = pid;
+
+          if (presentationUnsub) {
+            presentationUnsub();
+            presentationUnsub = null;
+          }
+          if (!pid) return;
+
+          let presFirstFire = true;
+          presentationUnsub = onValue(ref(db, `presentations/${pid}`), (snap) => {
+            if (presFirstFire) {
+              presFirstFire = false;
+              return;
+            }
+            if (!snap.val()) return;
+            syncEnabled = !!snap.val().syncPlayback;
+            scheduleReload(false);
+          });
+        }
+
+        let monWatchFirstFire = true;
+        onValue(ref(db, `monitors/${monKey}`), () => {
+          if (monWatchFirstFire) {
+            monWatchFirstFire = false;
+            return;
+          }
+          updatePresentationWatch();
+        });
+
+        let activeFirstFire = true;
+        onValue(ref(db, "activePresentation"), async () => {
+          if (activeFirstFire) {
+            activeFirstFire = false;
+            return;
+          }
+          const monSnap = await get(ref(db, `monitors/${monKey}`));
+          const monData = monSnap.val();
+          let pid = null;
+          if (typeof monData === "object" && monData)
+            pid = monData.presentation || monData.assigned || monData.pid || null;
+          if (!pid) scheduleReload(false);
+        });
+
+        let curFirstFire = true;
+        onValue(ref(db, "presentations/current"), async () => {
+          if (curFirstFire) {
+            curFirstFire = false;
+            return;
+          }
+          const monSnap = await get(ref(db, `monitors/${monKey}`));
+          const monData = monSnap.val();
+          let pid = null;
+          if (typeof monData === "object" && monData)
+            pid = monData.presentation || monData.assigned || monData.pid || null;
+          if (!pid) scheduleReload(false);
+        });
+
+        let lastRefreshSignal = null;
+        onValue(ref(db, "refreshSignal"), (snap) => {
+          const val = snap.val();
+          if (lastRefreshSignal === null) {
+            lastRefreshSignal = val;
+            return;
+          }
+          if (val !== lastRefreshSignal) {
+            lastRefreshSignal = val;
+            window.location.reload();
+          }
+        });
+      }
+
+      // ── Boot ───────────────────────────────────────────────────────────────────────
+      async function boot() {
+        setProgress(0, "Connecting…");
+        monitorName = await getMonitorName();
+        if (!monitorName) return;
+        preloadTitle.textContent = monitorName;
+        await registerPresence(monitorName);
+        attachListeners();
+        await loadPresentation(false);
+      }
+
+      boot();
+    </script>
+  </body>
+</html>
