@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Science Multiple Choice Quiz</title>
+<style>
+  body{
+    font-family: Arial, sans-serif;
+    background:#f4f4f4;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+    margin:0;
+    padding:20px;
+  }
+  .quiz-box{
+    background:white;
+    width:750px;
+    max-width:100%;
+    padding:28px;
+    border-radius:16px;
+    box-shadow:0 4px 18px rgba(0,0,0,0.12);
+  }
+  h1{
+    text-align:center;
+    margin:0 0 14px;
+  }
+  #meta{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-bottom:18px;
+    font-size:14px;
+    color:#444;
+  }
+  #progressWrap{
+    width:100%;
+    height:12px;
+    background:#e5e7eb;
+    border-radius:999px;
+    overflow:hidden;
+    margin-top:8px;
+  }
+  #progressBar{
+    height:100%;
+    width:0%;
+    background:#2563eb;
+  }
+  #question{
+    font-size:22px;
+    margin:18px 0 18px;
+    line-height:1.35;
+  }
+  .option{
+    display:block;
+    width:100%;
+    padding:14px;
+    margin-bottom:12px;
+    border:none;
+    border-radius:10px;
+    background:#e5e7eb;
+    font-size:17px;
+    cursor:pointer;
+    text-align:left;
+  }
+  .option:hover{ background:#d1d5db; }
+  .option:disabled{ cursor:not-allowed; opacity:1; }
+  .correct{ background:#86efac !important; }
+  .wrong{ background:#fca5a5 !important; }
+  #controls{
+    display:flex;
+    gap:12px;
+    margin-top:18px;
+    flex-wrap:wrap;
+  }
+  button.action{
+    padding:12px 22px;
+    font-size:16px;
+    border:none;
+    border-radius:10px;
+    background:#2563eb;
+    color:white;
+    cursor:pointer;
+  }
+  button.action:hover{ background:#1d4ed8; }
+  button.action:disabled{
+    background:#94a3b8;
+    cursor:not-allowed;
+  }
+  #feedback{
+    margin-top:16px;
+    font-size:18px;
+    font-weight:600;
+    min-height:28px;
+  }
+  #score{
+    margin-top:14px;
+    font-size:20px;
+    font-weight:bold;
+  }
+  #checkpoint{
+    margin-top:14px;
+    padding:14px;
+    border-radius:12px;
+    background:#eef2ff;
+    display:none;
+    line-height:1.45;
+  }
+  .small{
+    font-size:13px;
+    color:#555;
+  }
+</style>
+</head>
+<body>
+  <div class="quiz-box">
+    <h1>Science Revision Quiz</h1>
+
+    <div id="meta">
+      <div id="qCount">Question 1 of 50</div>
+      <div id="scoreCount">Score: 0</div>
+      <div id="pctCount">Progress: 0%</div>
+      <div id="progressWrap"><div id="progressBar"></div></div>
+    </div>
+
+    <div id="question"></div>
+    <div id="options"></div>
+
+    <div id="controls">
+      <button class="action" id="nextBtn" onclick="nextQuestion()" disabled>Next</button>
+      <button class="action" id="continueBtn" onclick="continueAfterCheckpoint()" style="display:none;">Continue</button>
+      <button class="action" id="restartBtn" onclick="restartQuiz()" style="display:none;">Restart</button>
+    </div>
+
+    <div id="feedback"></div>
+    <div id="checkpoint"></div>
+    <div id="score"></div>
+    <div class="small" id="tip"></div>
+  </div>
+
+<script>
+const questions = [
+  {q:"What process changes liquid water into water vapour?", o:["Condensation","Evaporation","Precipitation","Transpiration"], a:["Evaporation"]},
+  {q:"What process turns water vapour into liquid water?", o:["Condensation","Evaporation","Melting","Sublimation"], a:["Condensation"]},
+  {q:"What is water falling from clouds called?", o:["Runoff","Precipitation","Evaporation","Collection"], a:["Precipitation"]},
+  {q:"Which is one of the four global Earth systems?", o:["Atmosphere","Magnetosphere","Biosphere","Asteroid belt"], a:["Atmosphere"]},
+  {q:"Which Earth system includes living things?", o:["Geosphere","Hydrosphere","Biosphere","Cryosphere"], a:["Biosphere"]},
+  {q:"Which Earth system is made up of water?", o:["Hydrosphere","Atmosphere","Lithosphere","Biosphere"], a:["Hydrosphere"]},
+  {q:"What gas do plants take in during photosynthesis?", o:["Oxygen","Nitrogen","Carbon dioxide","Hydrogen"], a:["Carbon dioxide","CO2"]},
+  {q:"What gas do plants release during photosynthesis?", o:["Carbon dioxide","Oxygen","Methane","Nitrogen"], a:["Oxygen"]},
+  {q:"What is the main purpose of respiration?", o:["Make water","Release energy","Create sunlight","Store oxygen"], a:["Release energy","Make energy available"]},
+  {q:"What is an ecosystem?", o:["A single animal","Living things and their environment","Only plants in one area","A type of rock"], a:["Living things and their environment","Organisms and their environment"]},
+
+  {q:"Which subatomic particle has a positive charge?", o:["Electron","Neutron","Proton","Ion"], a:["Proton"]},
+  {q:"Which subatomic particle has a negative charge?", o:["Proton","Electron","Neutron","Isotope"], a:["Electron"]},
+  {q:"Which subatomic particle has no charge?", o:["Electron","Proton","Neutron","Ion"], a:["Neutron"]},
+  {q:"Where are protons and neutrons found?", o:["In the nucleus","In energy levels","Outside the atom","In waves"], a:["In the nucleus","In the nucleus of the atom"]},
+  {q:"What is the atomic number?", o:["Number of neutrons","Number of protons","Number of electrons + neutrons","Mass number"], a:["Number of protons"]},
+  {q:"What is the mass number?", o:["Protons + neutrons","Protons + electrons","Electrons + neutrons","Only protons"], a:["Protons + neutrons"]},
+  {q:"What is an ion?", o:["A neutral atom","A charged atom","A type of wave","A proton"], a:["A charged atom","An atom with a charge"]},
+  {q:"How does an atom become a positive ion?", o:["Gains electrons","Loses electrons","Gains neutrons","Loses protons"], a:["Loses electrons"]},
+  {q:"How does an atom become a negative ion?", o:["Loses electrons","Gains electrons","Loses neutrons","Gains protons"], a:["Gains electrons"]},
+  {q:"What are isotopes?", o:["Atoms with different numbers of protons","Atoms with the same protons but different neutrons","Atoms with no neutrons","Charged atoms"], a:["Atoms with the same protons but different neutrons"]},
+  {q:"Which statement is true about isotopes of the same element?", o:["They have different atomic numbers","They have the same atomic number","They have no protons","They are always ions"], a:["They have the same atomic number"]},
+  {q:"What is radiation?", o:["Energy or particles given off by unstable nuclei","A type of bond","A neutral atom","A wave reflection"], a:["Energy or particles given off by unstable nuclei"]},
+  {q:"Which type of radiation is often blocked by paper?", o:["Alpha","Beta","Gamma","Radio"], a:["Alpha"]},
+  {q:"Which type of radiation is the most penetrating?", o:["Alpha","Beta","Gamma","Neutron"], a:["Gamma"]},
+  {q:"What happens in radioactive decay?", o:["An unstable nucleus becomes more stable","The atom becomes a molecule","The electron disappears","The atom turns into light"], a:["An unstable nucleus becomes more stable"]},
+
+  {q:"What is the distance between two wave crests called?", o:["Amplitude","Frequency","Wavelength","Reflection"], a:["Wavelength"]},
+  {q:"What is the height of a wave from rest position called?", o:["Amplitude","Wavelength","Refraction","Pitch"], a:["Amplitude"]},
+  {q:"What does frequency measure?", o:["Wave height","Number of waves per second","Colour of light","Distance between troughs"], a:["Number of waves per second"]},
+  {q:"What happens when a wave reflects?", o:["It bounces back","It stops","It changes into heat","It disappears"], a:["It bounces back"]},
+  {q:"What is the law of reflection about angles?", o:["Angle of incidence equals angle of reflection","Angle of incidence is double the angle of reflection","All angles are equal","Light does not reflect"], a:["Angle of incidence equals angle of reflection"]},
+  {q:"What is brightness linked to?", o:["Light intensity","Wavelength only","Temperature only","Mass"], a:["Light intensity"]},
+  {q:"What colour has the longest wavelength?", o:["Blue","Green","Red","Violet"], a:["Red"]},
+  {q:"What colour has the shortest wavelength?", o:["Red","Yellow","Blue","Violet"], a:["Violet"]},
+  {q:"What colour does an object appear if it reflects red light?", o:["Red","Blue","Black","White"], a:["Red"]},
+  {q:"What happens to most other colours when an object looks green?", o:["They are reflected","They are absorbed","They become brighter","They disappear"], a:["They are absorbed"]},
+  {q:"Why does a white object look white?", o:["It absorbs all light","It reflects most colours of light","It only reflects red light","It makes light"], a:["It reflects most colours of light"]},
+  {q:"Why does a black object look black?", o:["It reflects all light","It absorbs most light","It has no atoms","It gives off light"], a:["It absorbs most light"]},
+  {q:"What happens when light is absorbed by a surface?", o:["It bounces away","It changes into another form of energy","It turns into sound","It becomes a proton"], a:["It changes into another form of energy"]},
+  {q:"Which wave property is measured in hertz (Hz)?", o:["Wavelength","Amplitude","Frequency","Brightness"], a:["Frequency"]},
+  {q:"Which part of a wave is the lowest point?", o:["Crest","Trough","Peak","Node"], a:["Trough"]},
+
+  {q:"What is the main input needed for photosynthesis?", o:["Sunlight","Salt","Sound","Magnetism"], a:["Sunlight","Light energy"]},
+  {q:"What is the main product stored by plants from photosynthesis?", o:["Glucose","Protein","Water","Carbon dioxide"], a:["Glucose","Sugar"]},
+  {q:"What part of the atom mostly determines the element?", o:["Number of protons","Number of neutrons","Number of electrons only","Mass number only"], a:["Number of protons"]},
+  {q:"Which charge does a proton have?", o:["Negative","Neutral","Positive","No charge"], a:["Positive"]},
+  {q:"Which charge does an electron have?", o:["Negative","Positive","Neutral","No charge"], a:["Negative"]},
+  {q:"What does the geosphere include?", o:["Rocks and land","Clouds","Animals","Ocean water only"], a:["Rocks and land","The solid Earth"]},
+  {q:"Which process moves water from plants into the air?", o:["Transpiration","Condensation","Sublimation","Freezing"], a:["Transpiration"]},
+  {q:"Which cycle moves carbon through living things and the atmosphere?", o:["Water cycle","Rock cycle","Carbon cycle","Nitrogen cycle"], a:["Carbon cycle"]},
+  {q:"What happens in respiration in cells?", o:["Glucose is broken down to release energy","Oxygen is made from water","Light is stored in leaves","Rocks are dissolved"], a:["Glucose is broken down to release energy"]},
+  {q:"What is an ecosystem made of?", o:["Only animals","Only plants","Living and non-living things interacting","Only soil and water"], a:["Living and non-living things interacting"]}
+];
+
+let current = 0;
+let score = 0;
+let chosen = false;
+let checkpointScore = 0;
+
+const questionEl = document.getElementById("question");
+const optionsEl = document.getElementById("options");
+const nextBtn = document.getElementById("nextBtn");
+const continueBtn = document.getElementById("continueBtn");
+const restartBtn = document.getElementById("restartBtn");
+const feedbackEl = document.getElementById("feedback");
+const checkpointEl = document.getElementById("checkpoint");
+const scoreEl = document.getElementById("score");
+const qCountEl = document.getElementById("qCount");
+const scoreCountEl = document.getElementById("scoreCount");
+const pctCountEl = document.getElementById("pctCount");
+const progressBar = document.getElementById("progressBar");
+const tipEl = document.getElementById("tip");
+
+function normalize(text) {
+  return String(text).toLowerCase().trim().replace(/\s+/g, " ");
+}
+
+function answerMatches(selected, acceptedList) {
+  const s = normalize(selected);
+  return acceptedList.some(a => {
+    const n = normalize(a);
+    return s === n || s.includes(n) || n.includes(s);
+  });
+}
+
+function updateTop() {
+  qCountEl.textContent = `Question ${Math.min(current + 1, questions.length)} of ${questions.length}`;
+  scoreCountEl.textContent = `Score: ${score}`;
+  const pct = Math.round((current / questions.length) * 100);
+  pctCountEl.textContent = `Progress: ${pct}%`;
+  progressBar.style.width = `${pct}%`;
+}
+
+function showQuestion() {
+  chosen = false;
+  nextBtn.disabled = true;
+  nextBtn.style.display = "inline-block";
+  continueBtn.style.display = "none";
+  checkpointEl.style.display = "none";
+  feedbackEl.textContent = "";
+  tipEl.textContent = "";
+
+  if (current >= questions.length) {
+    finishQuiz();
+    return;
+  }
+
+  const q = questions[current];
+  questionEl.innerHTML = `Question ${current + 1}:<br><br>${q.q}`;
+  optionsEl.innerHTML = "";
+
+  q.o.forEach(opt => {
+    const btn = document.createElement("button");
+    btn.className = "option";
+    btn.textContent = opt;
+    btn.onclick = () => selectAnswer(btn, opt);
+    optionsEl.appendChild(btn);
+  });
+
+  updateTop();
+}
+
+function selectAnswer(button, selected) {
+  if (chosen) return;
+  chosen = true;
+
+  const q = questions[current];
+  const buttons = document.querySelectorAll(".option");
+
+  buttons.forEach(btn => {
+    btn.disabled = true;
+    if (answerMatches(btn.textContent, q.a)) btn.classList.add("correct");
+  });
+
+  if (answerMatches(selected, q.a)) {
+    score++;
+    feedbackEl.textContent = "Correct.";
+    button.classList.add("correct");
+  } else {
+    feedbackEl.textContent = `Incorrect. Correct answer: ${q.a[0]}`;
+    button.classList.add("wrong");
+  }
+
+  nextBtn.disabled = false;
+  updateTop();
+}
+
+function nextQuestion() {
+  if (!chosen) return;
+
+  current++;
+
+  if (current % 10 === 0 && current < questions.length) {
+    const questionsDone = current;
+    const progressPct = Math.round((questionsDone / questions.length) * 100);
+    const scoredThisBlock = score - checkpointScore;
+    checkpointScore = score;
+
+    questionEl.innerHTML = "Progress Check";
+    optionsEl.innerHTML = "";
+    feedbackEl.textContent = "";
+    nextBtn.style.display = "none";
+    continueBtn.style.display = "inline-block";
+
+    checkpointEl.style.display = "block";
+    checkpointEl.innerHTML = `
+      You have completed ${questionsDone} out of ${questions.length} questions.<br>
+      Progress so far: ${progressPct}%<br>
+      Score so far: ${score}/${questionsDone}<br>
+      Score in the last 10 questions: ${scoredThisBlock}/10
+    `;
+
+    updateTop();
+    return;
+  }
+
+  showQuestion();
+}
+
+function continueAfterCheckpoint() {
+  showQuestion();
+}
+
+function finishQuiz() {
+  questionEl.innerHTML = "Quiz Complete";
+  optionsEl.innerHTML = "";
+  feedbackEl.textContent = "";
+  checkpointEl.style.display = "none";
+  nextBtn.style.display = "none";
+  continueBtn.style.display = "none";
+  restartBtn.style.display = "inline-block";
+
+  const percent = Math.round((score / questions.length) * 100);
+  progressBar.style.width = "100%";
+  pctCountEl.textContent = "Progress: 100%";
+
+  scoreEl.innerHTML = `Final Score: ${score}/${questions.length} (${percent}%)<br>${percent >= 50 ? "PASS" : "FAIL - Try Again"}`;
+}
+
+function restartQuiz() {
+  current = 0;
+  score = 0;
+  chosen = false;
+  checkpointScore = 0;
+  restartBtn.style.display = "none";
+  showQuestion();
+}
+
+showQuestion();
+</script>
+</body>
+</html>
