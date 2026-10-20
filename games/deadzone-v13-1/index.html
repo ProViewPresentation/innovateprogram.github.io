@@ -85,15 +85,13 @@ body { background: #000; overflow: hidden; font-family: 'Courier New', monospace
 
 .screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 100; color: #fff; }
 .screen.active { display: flex; }
-#auth-screen { background: #000; }
 #start-screen { background: rgba(0,0,0,0.94); }
 #pause-screen { background: rgba(0,0,0,0.8); pointer-events: all; }
 #gameover-screen { background: rgba(0,0,0,0.93); }
-#lb-screen { background: rgba(0,0,0,0.96); overflow-y: auto; }
-#fb-screen { background: rgba(0,0,0,0.96); }
 
 .game-title { font-size: 80px; font-weight: 900; letter-spacing: 14px; color: #fff; text-shadow: 0 0 60px rgba(255,68,68,0.6); margin-bottom: 6px; }
 .game-sub { color: rgba(255,255,255,0.3); letter-spacing: 10px; font-size: 12px; margin-bottom: 50px; }
+.best-line { color: rgba(255,221,0,0.7); font-size: 11px; letter-spacing: 4px; min-height: 14px; margin: -32px 0 36px; }
 
 .btn { border: none; font-family: 'Courier New', monospace; font-size: 13px; letter-spacing: 4px; cursor: pointer; text-transform: uppercase; transition: all 0.2s; padding: 15px 44px; pointer-events: all; }
 .btn-primary { background: #ff3333; color: #fff; }
@@ -103,50 +101,6 @@ body { background: #000; overflow: hidden; font-family: 'Courier New', monospace
 .btn-sm { padding: 10px 24px; font-size: 11px; }
 
 .controls-hint { margin-top: 36px; color: rgba(255,255,255,0.25); font-size: 11px; letter-spacing: 2px; line-height: 2.5; text-align: center; }
-
-.auth-wrap { width: 360px; }
-.auth-title { font-size: 60px; font-weight: 900; letter-spacing: 12px; margin-bottom: 4px; }
-.auth-sub { color: rgba(255,255,255,0.3); letter-spacing: 6px; font-size: 11px; margin-bottom: 40px; }
-.auth-tabs { display: flex; margin-bottom: 28px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-.auth-tab { background: none; border: none; color: rgba(255,255,255,0.3); font-family: 'Courier New',monospace; font-size: 11px; letter-spacing: 3px; cursor: pointer; padding: 9px 22px 11px; text-transform: uppercase; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .2s; }
-.auth-tab.active { color: #ff4444; border-bottom-color: #ff4444; }
-.auth-form { display: flex; flex-direction: column; gap: 12px; }
-.auth-input { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #fff; font-family: 'Courier New',monospace; font-size: 13px; letter-spacing: 2px; padding: 13px 16px; outline: none; transition: border-color .2s; width: 100%; }
-.auth-input:focus { border-color: rgba(255,68,68,0.6); }
-.auth-input::placeholder { color: rgba(255,255,255,0.18); }
-.auth-error { color: #ff4444; font-size: 11px; letter-spacing: 2px; min-height: 16px; }
-.auth-or { color: rgba(255,255,255,0.18); text-align: center; font-size: 10px; letter-spacing: 3px; margin: 8px 0; }
-
-.user-bar { position: fixed; top: 14px; left: 20px; z-index: 200; display: flex; align-items: center; gap: 10px; pointer-events: all; }
-.username-el { color: rgba(255,255,255,0.35); font-size: 10px; letter-spacing: 2px; }
-.signout-btn { background: none; border: none; color: rgba(255,50,50,0.45); font-family: 'Courier New',monospace; font-size: 10px; letter-spacing: 2px; cursor: pointer; text-transform: uppercase; }
-.signout-btn:hover { color: #ff4444; }
-
-.lb-wrap { width: 540px; max-height: 80vh; }
-.lb-title { font-size: 44px; letter-spacing: 10px; margin-bottom: 4px; }
-.lb-sub { color: rgba(255,255,255,0.28); letter-spacing: 5px; font-size: 11px; margin-bottom: 28px; }
-.lb-table { width: 100%; border-collapse: collapse; }
-.lb-table th { color: rgba(255,255,255,0.28); font-size: 10px; letter-spacing: 3px; text-align: left; padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.07); }
-.lb-table td { padding: 11px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 13px; letter-spacing: 1px; color: rgba(255,255,255,0.7); }
-.lb-table tr.me td { color: #ff8800; }
-.lb-table tr:first-child td { color: #ffdd00; }
-.lb-rank { font-size: 11px; color: rgba(255,255,255,0.25); }
-.lb-rank-1 { color: #ffdd00; font-weight: bold; }
-.lb-rank-2 { color: #aaa; }
-.lb-rank-3 { color: #cd7f32; }
-.lb-empty { color: rgba(255,255,255,0.22); font-size: 12px; letter-spacing: 3px; text-align: center; padding: 30px; }
-.lb-actions { display: flex; gap: 10px; margin-top: 24px; }
-
-.fb-wrap { width: 460px; }
-.fb-title { font-size: 44px; letter-spacing: 10px; margin-bottom: 4px; }
-.fb-sub { color: rgba(255,255,255,0.28); letter-spacing: 5px; font-size: 11px; margin-bottom: 28px; }
-.fb-label { color: rgba(255,255,255,0.35); font-size: 10px; letter-spacing: 3px; text-transform: uppercase; display: block; margin-bottom: 5px; }
-.fb-input, .fb-textarea, .fb-select { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #fff; font-family: 'Courier New',monospace; font-size: 13px; letter-spacing: 1px; padding: 11px 14px; outline: none; transition: border-color .2s; width: 100%; margin-bottom: 14px; }
-.fb-input:focus, .fb-textarea:focus, .fb-select:focus { border-color: rgba(255,68,68,0.5); }
-.fb-textarea { resize: vertical; min-height: 90px; }
-.fb-select option { background: #111; }
-.fb-success { color: #00ff88; font-size: 12px; letter-spacing: 3px; text-align: center; padding: 18px; display: none; }
-.fb-actions { display: flex; gap: 10px; }
 
 .go-title { font-size: 64px; letter-spacing: 8px; color: #ff3333; margin-bottom: 10px; text-shadow: 0 0 40px rgba(255,51,51,0.5); }
 .go-score { font-size: 20px; color: rgba(255,255,255,0.55); margin: 0 0 8px; letter-spacing: 4px; }
@@ -203,38 +157,13 @@ body { background: #000; overflow: hidden; font-family: 'Courier New', monospace
   <button class="shop-close" id="shop-close-btn">CLOSE [B/ESC]</button>
 </div>
 
-<div class="user-bar" id="user-bar" style="display:none">
-  <span class="username-el" id="ui-uname"></span>
-  <button class="signout-btn" id="signout-btn">Sign Out</button>
-</div>
-
-<!-- AUTH -->
-<div id="auth-screen" class="screen active">
-  <div class="auth-wrap">
-    <div class="auth-title">DEADZONE</div>
-    <div class="auth-sub">3D Survival · Raycaster Edition</div>
-    <div class="auth-tabs">
-      <button class="auth-tab active" id="tab-login">Login</button>
-      <button class="auth-tab" id="tab-reg">Register</button>
-    </div>
-    <div class="auth-form">
-      <input class="auth-input" id="a-uname" type="text" placeholder="Username" style="display:none">
-      <input class="auth-input" id="a-email" type="email" placeholder="Email" autocomplete="off">
-      <input class="auth-input" id="a-pass" type="password" placeholder="Password">
-      <div class="auth-error" id="a-err"></div>
-      <button class="btn btn-primary" id="a-submit">LOGIN</button>
-    </div>
-  </div>
-</div>
-
 <!-- START -->
-<div id="start-screen" class="screen">
+<div id="start-screen" class="screen active">
   <div class="game-title">DEADZONE</div>
   <div class="game-sub">3D · Raycaster Survival</div>
+  <div class="best-line" id="best-line"></div>
   <div style="display:flex;gap:12px;margin-bottom:12px;">
     <button class="btn btn-primary" id="start-btn">PLAY</button>
-    <button class="btn btn-secondary" id="lb-btn">LEADERBOARD</button>
-    <button class="btn btn-secondary" id="fb-btn">FEEDBACK</button>
   </div>
   <div class="controls-hint">
     WASD — Move &nbsp;|&nbsp; Mouse — Aim &nbsp;|&nbsp; Click — Shoot<br>
@@ -249,8 +178,6 @@ body { background: #000; overflow: hidden; font-family: 'Courier New', monospace
   <div style="color:rgba(255,255,255,0.3);letter-spacing:4px;font-size:12px;margin-bottom:34px;">Everything is frozen</div>
   <div style="display:flex;flex-direction:column;gap:10px;align-items:center;">
     <button class="btn btn-primary" id="resume-btn">RESUME</button>
-    <button class="btn btn-secondary btn-sm" id="p-lb-btn">LEADERBOARD</button>
-    <button class="btn btn-secondary btn-sm" id="p-fb-btn">FEEDBACK</button>
   </div>
 </div>
 
@@ -261,271 +188,63 @@ body { background: #000; overflow: hidden; font-family: 'Courier New', monospace
   <div class="go-record" id="go-record"></div>
   <div class="go-btns">
     <button class="btn btn-primary" id="restart-btn">PLAY AGAIN</button>
-    <button class="btn btn-secondary btn-sm" id="go-lb-btn">LEADERBOARD</button>
-    <button class="btn btn-secondary btn-sm" id="go-fb-btn">FEEDBACK</button>
   </div>
 </div>
 
-<!-- LEADERBOARD -->
-<div id="lb-screen" class="screen">
-  <div class="lb-wrap">
-    <div class="lb-title">LEADERBOARD</div>
-    <div class="lb-sub" id="lb-sub">All Scores — By Wave Reached</div>
-    <table class="lb-table">
-      <thead><tr><th>#</th><th>Player</th><th>Wave</th><th>Score</th></tr></thead>
-      <tbody id="lb-body"><tr><td colspan="4" class="lb-empty">Loading...</td></tr></tbody>
-    </table>
-    <div class="lb-actions">
-      <button class="btn btn-secondary btn-sm" id="lb-back-btn">← BACK</button>
-      <button class="btn btn-secondary btn-sm" id="lb-refresh-btn">REFRESH</button>
-    </div>
-  </div>
-</div>
-
-<!-- FEEDBACK -->
-<div id="fb-screen" class="screen">
-  <div class="fb-wrap">
-    <div class="fb-title">FEEDBACK</div>
-    <div class="fb-sub">Help Us Improve Deadzone 3D</div>
-    <label class="fb-label">Category</label>
-    <select class="fb-select" id="fb-cat">
-      <option value="bug">Bug Report</option>
-      <option value="gameplay">Gameplay Feedback</option>
-      <option value="feature">Feature Request</option>
-      <option value="balance">Balance / Difficulty</option>
-      <option value="other">Other</option>
-    </select>
-    <label class="fb-label">Message</label>
-    <textarea class="fb-textarea" id="fb-msg" placeholder="Tell us what you think..."></textarea>
-    <div class="auth-error" id="fb-err"></div>
-    <div class="fb-success" id="fb-ok">Thanks for your feedback!</div>
-    <div class="fb-actions">
-      <button class="btn btn-primary btn-sm" id="fb-submit">SUBMIT</button>
-      <button class="btn btn-secondary btn-sm" id="fb-back-btn">← BACK</button>
-    </div>
-  </div>
-</div>
-
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════════
-// FIREBASE
+// LOCAL BEST SCORE — offline, no accounts, no network
 // ═══════════════════════════════════════════════════════════
-firebase.initializeApp({
-  apiKey: "AIzaSyDEsmdqWZ2lBU7MpnXCjD12aQViUDb4dqA",
-  authDomain: "innovateprogram-fd00c.firebaseapp.com",
-  projectId: "innovateprogram-fd00c",
-  storageBucket: "innovateprogram-fd00c.firebasestorage.app",
-  messagingSenderId: "1006945173823",
-  appId: "1:1006945173823:web:8cf8449b9836bab60b938a"
-});
-const auth = firebase.auth();
-const db   = firebase.firestore();
+const BEST_KEY = 'deadzone_best';
+window._personalBestWave = 0;
+window._personalBestScore = 0;
 
-window._currentUser = null; window._isGuest = false;
-window._personalBestWave = 0; window._personalBestScore = 0;
-window._globalBestWave = 0; window._globalBestScore = 0;
+function loadPersonalBest() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(BEST_KEY) || 'null');
+    if (saved && typeof saved === 'object') {
+      window._personalBestWave = saved.wave || 0;
+      window._personalBestScore = saved.score || 0;
+    }
+  } catch (e) { /* storage unavailable — play without a saved best */ }
+}
+function savePersonalBest() {
+  try {
+    localStorage.setItem(BEST_KEY, JSON.stringify({
+      wave: window._personalBestWave,
+      score: window._personalBestScore,
+    }));
+  } catch (e) { /* storage unavailable — best lasts for this session */ }
+}
+function isBetterRun(wave, score, bestWave, bestScore) {
+  return wave > bestWave || (wave === bestWave && score > bestScore);
+}
+window.submitScore = function (wave, score) {
+  const beatPersonal = isBetterRun(wave, score, window._personalBestWave, window._personalBestScore);
+  if (beatPersonal) {
+    window._personalBestWave = wave;
+    window._personalBestScore = score;
+    savePersonalBest();
+    renderPersonalBest();
+  }
+  return { beatPersonal };
+};
 
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   if (id) document.getElementById(id).classList.add('active');
 }
 
-async function fetchGlobalBests() {
-  try {
-    const snap = await db.collection('leaderboard').orderBy('wave','desc').limit(1).get();
-    if (!snap.empty) { const d = snap.docs[0].data(); window._globalBestWave = d.wave||0; window._globalBestScore = d.score||0; }
-  } catch(e) {}
-}
-async function fetchPersonalBest(uid) {
-  try {
-    const snap = await db.collection('users').doc(uid).get();
-    if (snap.exists) { const d = snap.data(); window._personalBestWave = d.bestWave||0; window._personalBestScore = d.bestScore||0; }
-  } catch(e) {}
-}
-function isBetterRun(wave, score, bestWave, bestScore) {
-  return wave > bestWave || (wave === bestWave && score > bestScore);
-}
-window.submitScore = async function(wave, score) {
-  const uid = window._currentUser ? window._currentUser.uid : null;
-  const name = window._currentUser ? (window._currentUser.displayName || window._currentUser.email) : 'Guest';
-  let beatPersonal = false, beatGlobal = false;
-  if (!uid) return { beatPersonal, beatGlobal };
-  try {
-    const ts = firebase.firestore.FieldValue.serverTimestamp();
-    const betterPersonal = isBetterRun(wave, score, window._personalBestWave, window._personalBestScore);
-    if (betterPersonal) {
-      beatPersonal = true;
-      window._personalBestWave = wave;
-      window._personalBestScore = score;
-    }
-    const userPayload = {
-      username: name,
-      lastWave: wave,
-      lastScore: score,
-      updatedAt: ts,
-    };
-    if (betterPersonal) {
-      userPayload.bestWave = wave;
-      userPayload.bestScore = score;
-    }
-    await db.collection('users').doc(uid).set(userPayload, { merge: true });
-
-    await db.collection('waveScores').add({
-      uid,
-      username: name,
-      wave,
-      score,
-      createdAt: ts,
-    });
-
-    const lbRef = db.collection('leaderboard').doc(uid);
-    const lbSnap = await lbRef.get();
-    const lb = lbSnap.exists ? lbSnap.data() : { wave: 0, score: 0 };
-    if (isBetterRun(wave, score, lb.wave || 0, lb.score || 0)) {
-      await lbRef.set({ username: name, wave, score, uid, updatedAt: ts });
-    }
-
-    if (isBetterRun(wave, score, window._globalBestWave, window._globalBestScore)) {
-      beatGlobal = true;
-      window._globalBestWave = wave;
-      window._globalBestScore = score;
-    }
-  } catch(e) {}
-  return { beatPersonal, beatGlobal };
-};
-async function loadLeaderboard() {
-  const rows = [];
-  const batchSize = 100;
-  try {
-    let lastDoc = null;
-    for (;;) {
-      let q = db.collection('waveScores').orderBy('wave', 'desc').orderBy('score', 'desc').limit(batchSize);
-      if (lastDoc) q = q.startAfter(lastDoc);
-      const snap = await q.get();
-      if (snap.empty) break;
-      snap.docs.forEach(d => rows.push({ id: d.id, ...d.data() }));
-      lastDoc = snap.docs[snap.docs.length - 1];
-      if (snap.docs.length < batchSize) break;
-    }
-    if (rows.length) return rows;
-  } catch(e) {}
-  try {
-    let lastDoc = null;
-    for (;;) {
-      let q = db.collection('leaderboard').orderBy('wave', 'desc').limit(batchSize);
-      if (lastDoc) q = q.startAfter(lastDoc);
-      const snap = await q.get();
-      if (snap.empty) break;
-      snap.docs.forEach(d => rows.push({ id: d.id, ...d.data() }));
-      lastDoc = snap.docs[snap.docs.length - 1];
-      if (snap.docs.length < batchSize) break;
-    }
-    rows.sort((a, b) => b.wave - a.wave || (b.score || 0) - (a.score || 0));
-  } catch(e) {}
-  return rows;
-}
-window.submitFeedback = async function(category, message) {
-  const uid = window._currentUser ? window._currentUser.uid : 'guest';
-  const name = window._currentUser ? (window._currentUser.displayName || window._currentUser.email) : 'Guest';
-  await db.collection('feedback').add({ category, message, username: name, uid, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
-};
-
-let authMode = 'login', _registering = false;
-const tabLogin = document.getElementById('tab-login');
-const tabReg = document.getElementById('tab-reg');
-const aUname = document.getElementById('a-uname');
-const aEmail = document.getElementById('a-email');
-const aPass = document.getElementById('a-pass');
-const aErr = document.getElementById('a-err');
-const aSubmit = document.getElementById('a-submit');
-
-tabLogin.addEventListener('click', () => { authMode='login'; tabLogin.classList.add('active'); tabReg.classList.remove('active'); aSubmit.textContent='LOGIN'; aUname.style.display='none'; aErr.textContent=''; });
-tabReg.addEventListener('click', () => { authMode='register'; tabReg.classList.add('active'); tabLogin.classList.remove('active'); aSubmit.textContent='CREATE ACCOUNT'; aUname.style.display='block'; aErr.textContent=''; });
-
-aSubmit.addEventListener('click', async () => {
-  aErr.textContent = '';
-  const email = aEmail.value.trim(), pass = aPass.value.trim(), uname = aUname.value.trim();
-  if (!email || !pass) { aErr.textContent = 'Email and password required.'; return; }
-  if (pass.length < 6) { aErr.textContent = 'Password must be at least 6 characters.'; return; }
-  if (authMode === 'register' && !uname) { aErr.textContent = 'Username required.'; return; }
-  aSubmit.disabled = true;
-  try {
-    if (authMode === 'register') {
-      _registering = true;
-      const cred = await auth.createUserWithEmailAndPassword(email, pass);
-      await cred.user.updateProfile({ displayName: uname });
-      db.collection('users').doc(cred.user.uid).set({ username: uname, email, bestWave: 0, bestScore: 0, createdAt: firebase.firestore.FieldValue.serverTimestamp() }).catch(() => {});
-      _registering = false;
-      window._currentUser = cred.user; window._isGuest = false;
-      await fetchGlobalBests(); await fetchPersonalBest(cred.user.uid);
-      setUserBar(uname); showScreen('start-screen');
-    } else {
-      await auth.signInWithEmailAndPassword(email, pass);
-    }
-  } catch(e) { _registering = false; aErr.textContent = (e.message||'Error').replace('Firebase: ','').replace(/\(auth\/.*?\)/,'').trim(); }
-  aSubmit.disabled = false;
-});
-
-function setUserBar(name) { document.getElementById('ui-uname').textContent = name; document.getElementById('user-bar').style.display = 'flex'; }
-
-document.getElementById('signout-btn').addEventListener('click', async () => {
-  try { await auth.signOut(); } catch(e) {}
-  window._currentUser=null; window._isGuest=false; window._personalBestWave=0; window._personalBestScore=0;
-  document.getElementById('user-bar').style.display='none';
-  if (G.state==='playing') endGame();
-  showScreen('auth-screen');
-});
-
-auth.onAuthStateChanged(async user => {
-  if (_registering) return;
-  if (user) {
-    window._currentUser=user; window._isGuest=false;
-    await fetchGlobalBests(); await fetchPersonalBest(user.uid);
-    setUserBar(user.displayName||user.email); showScreen('start-screen');
-  }
-});
-
-async function renderLeaderboard() {
-  const tbody = document.getElementById('lb-body');
-  const lbSub = document.getElementById('lb-sub');
-  tbody.innerHTML = '<tr><td colspan="4" class="lb-empty">Loading...</td></tr>';
-  const rows = await loadLeaderboard();
-  if (lbSub) lbSub.textContent = rows.length ? `All Scores — ${rows.length} entries` : 'All Scores — By Wave Reached';
-  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="4" class="lb-empty">No scores yet. Be the first!</td></tr>'; return; }
-  tbody.innerHTML = '';
-  rows.forEach((r, i) => {
-    const tr = document.createElement('tr');
-    const isMe = window._currentUser && r.uid === window._currentUser.uid;
-    if (isMe) tr.classList.add('me');
-    const rc = i===0?'lb-rank-1':i===1?'lb-rank-2':i===2?'lb-rank-3':'lb-rank';
-    const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1);
-    tr.innerHTML = `<td class="${rc}">${medal}</td><td>${r.username||'???'}${isMe?' (you)':''}</td><td>Wave ${r.wave}</td><td>${(r.score||0).toLocaleString()}</td>`;
-    tbody.appendChild(tr);
-  });
+function renderPersonalBest() {
+  const el = document.getElementById('best-line');
+  if (!el) return;
+  el.textContent = window._personalBestWave
+    ? 'BEST: WAVE ' + window._personalBestWave + ' · ' + window._personalBestScore.toLocaleString() + ' PTS'
+    : '';
 }
 
-document.getElementById('lb-refresh-btn').addEventListener('click', renderLeaderboard);
-document.getElementById('lb-back-btn').addEventListener('click', () => showScreen((G.state==='playing'||G.state==='paused')?'pause-screen':'start-screen'));
-document.getElementById('lb-btn').addEventListener('click', () => { renderLeaderboard(); showScreen('lb-screen'); });
-document.getElementById('p-lb-btn').addEventListener('click', () => { renderLeaderboard(); showScreen('lb-screen'); });
-document.getElementById('go-lb-btn').addEventListener('click', () => { renderLeaderboard(); showScreen('lb-screen'); });
-
-function backFromFb() { showScreen((G.state==='playing'||G.state==='paused')?'pause-screen':window._currentUser?'start-screen':'auth-screen'); }
-document.getElementById('fb-btn').addEventListener('click', () => { document.getElementById('fb-ok').style.display='none'; showScreen('fb-screen'); });
-document.getElementById('p-fb-btn').addEventListener('click', () => { document.getElementById('fb-ok').style.display='none'; showScreen('fb-screen'); });
-document.getElementById('go-fb-btn').addEventListener('click', () => { document.getElementById('fb-ok').style.display='none'; showScreen('fb-screen'); });
-document.getElementById('fb-back-btn').addEventListener('click', backFromFb);
-document.getElementById('fb-submit').addEventListener('click', async () => {
-  const cat = document.getElementById('fb-cat').value, msg = document.getElementById('fb-msg').value.trim();
-  document.getElementById('fb-err').textContent = '';
-  if (!msg) { document.getElementById('fb-err').textContent = 'Please enter a message.'; return; }
-  try { await window.submitFeedback(cat, msg); document.getElementById('fb-msg').value = ''; document.getElementById('fb-ok').style.display = 'block'; }
-  catch(e) { document.getElementById('fb-err').textContent = 'Failed to submit. Try again.'; }
-});
-fetchGlobalBests();
+loadPersonalBest();
+renderPersonalBest();
 
 // ═══════════════════════════════════════════════════════════
 // RAYCASTING ENGINE
@@ -760,13 +479,6 @@ function nextWave() {
   G.wave++; G.waveActive=false; G.waveTimer=4; G.enemiesLeft=0;
   document.getElementById('wave-text').textContent = 'WAVE ' + G.wave;
   announceWave();
-  if (window._currentUser) {
-    window.submitScore(G.wave, G.score).then(res => {
-      if (res && res.beatPersonal) {
-        addFeed('★ New best: Wave ' + G.wave + ' saved!', 'record');
-      }
-    }).catch(() => {});
-  }
 }
 
 function spawnWave() {
@@ -1618,18 +1330,20 @@ function announceWave() {
   setTimeout(()=>el.style.opacity='0',2000);
 }
 
-async function endGame() {
+function endGame() {
   G.state='over';
   cancelAnimationFrame(G.animId);
   if (document.pointerLockElement) document.exitPointerLock();
   document.getElementById('go-score').textContent='SCORE: '+G.score.toLocaleString()+'  |  WAVE: '+G.wave;
   document.getElementById('go-record').textContent='';
   showScreen('gameover-screen');
-  if (window._currentUser) {
-    const res=await window.submitScore(G.wave,G.score);
-    if (res.beatPersonal&&res.beatGlobal) document.getElementById('go-record').textContent='NEW GLOBAL RECORD!';
-    else if (res.beatPersonal) document.getElementById('go-record').textContent='New Personal Best!';
+  const res = window.submitScore(G.wave, G.score);
+  if (res.beatPersonal) {
+    document.getElementById('go-record').textContent = 'NEW PERSONAL BEST!';
+  } else if (window._personalBestWave) {
+    document.getElementById('go-record').textContent = 'BEST: WAVE ' + window._personalBestWave + ' · ' + window._personalBestScore.toLocaleString();
   }
+  renderPersonalBest();
 }
 
 function pauseGame() {
