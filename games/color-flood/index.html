@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Color Flood: Neon Overload — Innovate Games</title>
+    <meta
+      name="description"
+      content="Fast-paced neon puzzle game. Flood the glowing grid from the top-left corner before moves run out, chain combos, and unleash Neon Overload shockwaves."
+    />
+    <link rel="icon" type="image/svg+xml" href="logo.svg" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="bg-backdrop" aria-hidden="true"></div>
+
+    <div class="app-shell">
+      <header class="top-header">
+        <div class="brand-group">
+          <a class="back-link" href="../" aria-label="Back to Games Hub">&larr; Games</a>
+          <div class="title-wrap">
+            <h1>Color Flood</h1>
+            <span class="subtitle-pill">Neon Overload</span>
+          </div>
+        </div>
+
+        <div class="header-controls">
+          <button type="button" class="tool-btn is-active" id="btnSfx" title="Toggle synth sound effects (M)">
+            🔊 SFX: ON
+          </button>
+          <button type="button" class="tool-btn" id="btnBeat" title="Toggle synthwave ambient pulse loop (B)">
+            🎵 Beat: OFF
+          </button>
+          <button type="button" class="tool-btn" id="btnSymbols" title="Show high-contrast shape symbols on tiles">
+            ◐ Symbols
+          </button>
+        </div>
+      </header>
+
+      <main class="game-layout">
+        <!-- Main Interactive Board & Palette Stage -->
+        <section class="board-stage" aria-label="Game Board">
+          <div class="stage-topbar">
+            <div class="stage-status">
+              <span class="mode-badge" id="modeBadge">14×14 STANDARD</span>
+              <span class="coverage-text" id="coverageText">0% FLOODED</span>
+            </div>
+            <div class="stage-actions">
+              <button type="button" class="mini-btn" id="btnUndo" title="Undo previous move (Z)">
+                ↶ Undo (3)
+              </button>
+              <button type="button" class="mini-btn" id="btnRestart" title="Generate new board (R)">
+                ↻ New
+              </button>
+            </div>
+          </div>
+
+          <div class="progress-rail" aria-hidden="true">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+
+          <div class="canvas-frame" id="canvasFrame">
+            <canvas id="boardCanvas" width="510" height="510"></canvas>
+            <div class="combo-toast" id="comboToast" role="status" aria-live="polite"></div>
+
+            <!-- End-of-Board / Sector Clear Modal -->
+            <div class="result-overlay" id="resultOverlay" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+              <div class="result-card" id="resultCard">
+                <div class="result-kicker" id="resultKicker">14×14 STANDARD</div>
+                <h2 class="result-title" id="resultTitle">BOARD FLOODED!</h2>
+                <div class="new-best-pill" id="newBestPill" hidden>★ New High Score ★</div>
+                <p class="result-sub" id="resultSub"></p>
+
+                <div class="result-metrics">
+                  <div class="metric-box">
+                    <span class="m-label" id="resMetric1Label">Score</span>
+                    <span class="m-val" id="resMetric1Val">0</span>
+                  </div>
+                  <div class="metric-box">
+                    <span class="m-label" id="resMetric2Label">Time</span>
+                    <span class="m-val" id="resMetric2Val">00:00.0</span>
+                  </div>
+                  <div class="metric-box">
+                    <span class="m-label" id="resMetric3Label">Max Combo</span>
+                    <span class="m-val" id="resMetric3Val">1.0×</span>
+                  </div>
+                </div>
+
+                <div class="result-actions">
+                  <button type="button" class="primary-cta" id="btnResultPrimary">Play Again</button>
+                  <div class="result-row">
+                    <button type="button" class="secondary-cta" id="btnResultRetrySame">Replay Board</button>
+                    <button type="button" class="secondary-cta" id="btnResultSecondary">∞ Endless Mode</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="palette-dock">
+            <div class="palette-grid" id="paletteGrid" role="group" aria-label="Color Palette"></div>
+          </div>
+        </section>
+
+        <!-- Mode Selector -->
+        <section class="panel-card modes-card" aria-label="Game Modes">
+          <div class="section-label">
+            <span>Grid &amp; Mode</span>
+            <span>Select Preset</span>
+          </div>
+          <div class="mode-pills">
+            <button type="button" class="mode-pill" data-mode="chill">
+              <strong>12×12</strong>
+              <span>18 moves</span>
+            </button>
+            <button type="button" class="mode-pill is-selected" data-mode="standard">
+              <strong>14×14</strong>
+              <span>22 moves</span>
+            </button>
+            <button type="button" class="mode-pill" data-mode="hard">
+              <strong>16×16</strong>
+              <span>23 moves</span>
+            </button>
+            <button type="button" class="mode-pill" data-mode="hyper">
+              <strong>16×16+</strong>
+              <span>6 colors · 26m</span>
+            </button>
+            <button type="button" class="mode-pill endless-pill" data-mode="endless">
+              <strong>∞ Endless Neon Run</strong>
+              <span>Advance sectors · Carry bonus moves</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- Live Telemetry HUD -->
+        <section class="stats-grid" aria-label="Score and Stats">
+          <div class="stat-tile" id="statMovesTile">
+            <div class="stat-head">
+              <span>Moves Left</span>
+              <span class="reserve-pill" id="reservePill" hidden>+0 RSV</span>
+            </div>
+            <div class="stat-value" id="statMoves">22</div>
+            <div class="stat-sub" id="statMovesSub">Used 0 of 22</div>
+          </div>
+
+          <div class="stat-tile">
+            <div class="stat-head"><span>Timer</span></div>
+            <div class="stat-value" id="statTimer">00:00.0</div>
+            <div class="stat-sub" id="statBestTime">Starts on 1st move</div>
+          </div>
+
+          <div class="stat-tile">
+            <div class="stat-head"><span>Score</span></div>
+            <div class="stat-value" id="statScore">0</div>
+            <div class="stat-sub" id="statBestScore">Best 0</div>
+          </div>
+
+          <div class="stat-tile" id="statComboTile">
+            <div class="stat-head"><span>Multiplier</span></div>
+            <div class="stat-value" id="statCombo">1.0×</div>
+            <div class="stat-sub" id="statComboSub">Capture 6+ tiles to chain</div>
+          </div>
+        </section>
+
+        <!-- Neon Overload Reactor Module -->
+        <section class="panel-card overload-card" aria-label="Neon Overload Power-Up">
+          <div class="section-label" style="margin-bottom: 0;">
+            <span>⚡ Neon Overload</span>
+            <span id="overloadPct">0%</span>
+          </div>
+          <div class="overload-meter-rail">
+            <div class="overload-meter-fill" id="overloadBarFill"></div>
+          </div>
+          <button type="button" class="overload-btn" id="btnOverload" disabled>
+            CHARGING OVERLOAD (0%)
+          </button>
+          <p class="overload-hint" id="overloadHint">
+            Chain big tile captures &amp; combos to charge a free border-absorbing shockwave.
+          </p>
+        </section>
+
+        <!-- Quick Rules & Keyboard Shortcuts -->
+        <section class="panel-card tips-card" aria-label="How to Play">
+          <ul class="tips-list">
+            <li>Start from the <strong>top-left beacon</strong> and pick colors to absorb adjacent matching tiles.</li>
+            <li>Capture <strong>6+ tiles</strong> on consecutive turns to scale your combo multiplier up to <strong>5.0×</strong>.</li>
+            <li>Click swatches below <strong>or click any tile directly on the grid</strong> to flood!</li>
+          </ul>
+          <div class="hotkey-strip">
+            <span><kbd>1</kbd>–<kbd>6</kbd> Color</span>
+            <span><kbd>Space</kbd> Overload</span>
+            <span><kbd>Z</kbd> Undo</span>
+            <span><kbd>R</kbd> New</span>
+            <span><kbd>B</kbd> Beat</span>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="audio.js"></script>
+    <script src="game.js"></script>
+  </body>
+</html>
