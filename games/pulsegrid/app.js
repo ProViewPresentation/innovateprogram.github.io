@@ -201,11 +201,14 @@ function draw() {
 // Delegate pointer gestures so the pointer stays captured while editing cells.
 let gesture = null;
 let lastTap = null;
-function editStep(button, clear = false, velocity = false) {
+function editStep(button, clear = false, velocity = false, mode = null) {
   const r = Number(button.dataset.track);
   const i = Number(button.dataset.step);
   const track = state.tracks[r];
-  track.hits[i] = clear ? 0 : velocity ? (track.hits[i] + 1) % 4 : track.hits[i] ? 0 : 1;
+  track.hits[i] = clear || mode === "erase" ? 0
+    : velocity ? (track.hits[i] + 1) % 4
+    : mode === "add" ? track.hits[i] || 1
+    : track.hits[i] ? 0 : 1;
   const value = track.hits[i];
   button.classList.toggle("on", value !== 0);
   button.classList.toggle("accent", value === 2);
@@ -218,7 +221,7 @@ function visitStep(button) {
   const key = button.dataset.track + ":" + button.dataset.step;
   if (gesture.visited.has(key)) return;
   gesture.visited.add(key);
-  editStep(button, false, gesture.velocity);
+  editStep(button, false, gesture.velocity, gesture.mode);
 }
 $("matrix").addEventListener("pointerdown", (event) => {
   const button = event.target.closest(".step");
@@ -227,7 +230,12 @@ $("matrix").addEventListener("pointerdown", (event) => {
   button.focus({ preventScroll: true });
   const key = button.dataset.track + ":" + button.dataset.step;
   const doubleTap = lastTap && lastTap.key === key && performance.now() - lastTap.time < 350;
+  // Lock the whole stroke to the first cell's action. Adding preserves
+  // existing notes and their velocities; erasing never creates a note.
+  const firstHit = state.tracks[Number(button.dataset.track)].hits[Number(button.dataset.step)];
+  const mode = doubleTap || firstHit ? "erase" : "add";
   gesture = { id: event.pointerId, visited: new Set(), velocity: event.shiftKey,
+    mode: event.shiftKey && !doubleTap ? null : mode,
     x: event.clientX, y: event.clientY, startX: event.clientX, startY: event.clientY,
     key, moved: false, doubleTap };
   $("matrix").setPointerCapture(event.pointerId);
