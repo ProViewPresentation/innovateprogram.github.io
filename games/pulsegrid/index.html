@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#101217" />
+    <meta
+      name="description"
+      content="Build, perform and share electronic beats with PulseGrid, a free synthesized drum machine."
+    />
+    <title>PulseGrid — Beat studio</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <a class="brand" href="../" aria-label="Back to games"
+          ><span class="mark">ϟ</span> PULSE<span>GRID</span
+          ><small>BY INNOVATE</small></a
+        ><span class="session"><i></i> YOUR NEXT DROP STARTS HERE</span
+        ><a href="../" class="back">← Games</a>
+      </header>
+      <section class="intro">
+        <div class="eyebrow">BROWSER-BASED BEAT STUDIO / VOL. 01</div>
+        <h1>Find your <em>frequency.</em></h1>
+        <p>Six voices. Infinite possibilities. Make some noise.</p>
+      </section>
+      <section class="transport panel" aria-label="Playback controls">
+        <button id="play" class="primary">▶ <span>Play beat</span></button
+        ><button id="stop" title="Stop and rewind" aria-label="Stop and rewind">
+          ■
+        </button>
+        <div class="tempo">
+          <label for="bpm">TEMPO</label
+          ><input id="bpm" type="number" min="60" max="200" value="126" /><span
+            >BPM</span
+          >
+        </div>
+        <div class="swing">
+          <label for="swing">SWING <output id="swingValue">0%</output></label
+          ><input id="swing" type="range" min="0" max="60" value="0" />
+        </div>
+        <div class="length">
+          <label for="steps">PATTERN LENGTH</label
+          ><select id="steps">
+            <option value="16">16 steps</option>
+            <option value="32">32 steps</option>
+          </select>
+        </div>
+        <div class="clock">
+          <span id="position">01 / 16</span><small>4 / 4 TIME</small>
+        </div>
+      </section>
+      <section class="panel sequencer">
+        <div class="section-top">
+          <div>
+            <span class="eyebrow">01 / SEQUENCER</span>
+            <h2>Build your beat <span class="pill">LIVE</span></h2>
+          </div>
+          <div class="selectors">
+            <label
+              >PALETTE<select id="palette">
+                <option value="cyber">Cyberpunk Techno</option>
+                <option value="future">Future Bass</option>
+                <option value="minimal">Minimal House</option>
+              </select></label
+            ><label
+              >LOAD A PRESET<select id="preset">
+                <option value="house">Four-on-the-Floor</option>
+                <option value="dubstep">Dubstep Half-Time</option>
+                <option value="trance">Trance Roll</option>
+                <option value="dnb">Drum & Bass</option>
+              </select></label
+            >
+          </div>
+        </div>
+        <div class="grid-scroll"><div id="matrix"></div></div>
+        <div class="grid-footer">
+          <span
+            ><b class="dot soft"></b> SOFT <b class="dot normal"></b> NORMAL
+            <b class="dot accent"></b> ACCENT
+            <span class="hint"
+              >Click a step to cycle intensity · Click a voice to mute</span
+            ></span
+          ><button id="clear" class="text-button">Clear pattern ↗</button>
+        </div>
+      </section>
+      <div class="bottom-grid">
+        <section class="panel effects">
+          <div class="section-top">
+            <div>
+              <span class="eyebrow">02 / SOUND DESIGN</span>
+              <h2>Shape the signal</h2>
+            </div>
+            <span class="pill">FX RACK</span>
+          </div>
+          <div class="fx-grid">
+            <div class="fx">
+              <label for="filter">FILTER SWEEP</label>
+              <div class="filter-mode">
+                <select id="filterType" aria-label="Filter type">
+                  <option value="lowpass">Low-pass</option>
+                  <option value="highpass">High-pass</option>
+                </select>
+              </div>
+              <input
+                id="filter"
+                type="range"
+                min="0"
+                max="100"
+                value="100"
+              /><output id="filterValue">20.0 kHz</output>
+            </div>
+            <div class="fx">
+              <label for="drive">DISTORTION</label>
+              <div class="fx-icon">≋</div>
+              <input
+                id="drive"
+                type="range"
+                min="0"
+                max="100"
+                value="8"
+              /><output id="driveValue">8% GRIT</output>
+            </div>
+            <div class="fx">
+              <label for="delay">DELAY / ECHO</label
+              ><select id="division" aria-label="Delay note division">
+                <option value="0.5">1/8 note</option>
+                <option value="1">1/4 note</option></select
+              ><input
+                id="delay"
+                type="range"
+                min="0"
+                max="75"
+                value="15"
+              /><output id="delayValue">15% FEEDBACK</output>
+            </div>
+            <div class="fx">
+              <label for="reverb">REVERB SPACE</label>
+              <div class="fx-icon">◌</div>
+              <input
+                id="reverb"
+                type="range"
+                min="0"
+                max="70"
+                value="12"
+              /><output id="reverbValue">12% SPACE</output>
+            </div>
+          </div>
+        </section>
+        <section class="panel performance">
+          <span class="eyebrow">03 / LIVE PERFORMANCE</span>
+          <h2>The build. The drop.</h2>
+          <p>Hold a pad to roll. Release to return.</p>
+          <div class="pads">
+            <button data-roll="8">1/8<small>STUTTER</small></button
+            ><button data-roll="16">1/16<small>ROLL</small></button
+            ><button data-roll="32">1/32<small>RAPID FIRE</small></button>
+          </div>
+          <div class="performance-note"><i></i> MADE FOR THE MOMENT</div>
+        </section>
+      </div>
+      <section class="panel export">
+        <div>
+          <span class="eyebrow">04 / TAKE IT WITH YOU</span>
+          <h2>A good beat deserves to be heard.</h2>
+          <p>Export one loop, save your session, or send a link.</p>
+        </div>
+        <div class="export-actions">
+          <button id="share">↗ Share beat</button
+          ><button id="save">↓ JSON</button
+          ><button id="load">↑ Load JSON</button
+          ><input
+            type="file"
+            id="file"
+            accept="application/json,.json"
+            hidden
+          /><button id="wav" class="primary">↓ Export WAV</button>
+        </div>
+      </section>
+      <footer>
+        <span>PULSEGRID <b> / </b> NO SAMPLES. JUST SIGNAL.</span
+        ><span>Space to play / pause <b>·</b> Headphones recommended</span>
+      </footer>
+      <p id="status" role="status" aria-live="polite"></p>
+      <details>
+        <summary>Quick start & export notes</summary>
+        <p>
+          Steps cycle Off → Normal → Accent → Soft → Off. S solos a track; voice
+          names mute. Track length creates independent loops. Synth notes use
+          the track's note selector. Your session saves on this device
+          automatically. Share links contain the full pattern. WAV exports one
+          master loop with an effects tail; independent track cycles may
+          continue beyond that loop. MP3 is not exported: WAV is lossless and
+          can be converted in your audio editor. Start playback to enable audio.
+          Playback pauses when this tab is hidden.
+        </p>
+      </details>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>
