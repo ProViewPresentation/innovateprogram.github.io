@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <title>Helpdesk Hero — OS Simulator</title>
+    <meta name="description" content="Helpdesk Hero: run a simulated desktop OS, answer support calls, triage tickets, and keep customers happy as an IT Helpdesk Specialist." />
+    <meta name="theme-color" content="#0a0e1a" />
+    <link rel="icon" href="logo.png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="app-root">
+      <!-- Desktop surface -->
+      <div id="desktop">
+        <div id="desktop-icons" class="desktop-icons"></div>
+        <div id="call-banner" class="call-banner" role="status" aria-live="polite"></div>
+      </div>
+
+      <!-- Start menu -->
+      <div id="start-menu" class="start-menu" role="menu" aria-label="Start menu">
+        <div class="start-header">
+          <span class="start-logo">🖥️ Helpdesk<strong>Hero</strong></span>
+        </div>
+        <div class="start-grid"></div>
+        <div class="start-footer">
+          <button type="button" id="end-shift-btn" class="btn btn-danger btn-block">End Shift Early</button>
+          <label class="start-sfx"><input type="checkbox" id="sfx-toggle" checked /> Sound effects</label>
+        </div>
+      </div>
+
+      <!-- Taskbar -->
+      <div id="taskbar" class="taskbar">
+        <button type="button" id="start-btn" class="start-btn" aria-haspopup="true" aria-expanded="false">
+          <span class="start-btn-icon">⊞</span><span class="start-btn-label">Start</span>
+        </button>
+        <div id="taskbar-windows" class="taskbar-windows"></div>
+        <div class="tray">
+          <span id="hud-day" class="tray-chip">Day 1</span>
+          <span id="hud-level" class="tray-chip tray-level">Tier 1 Support</span>
+          <span id="hud-timer" class="tray-chip tray-timer">⏱ 0:00</span>
+          <span id="hud-credits" class="tray-chip">💳 0</span>
+          <span id="hud-reputation" class="tray-chip">⭐ 0%</span>
+          <button type="button" id="notif-bell" class="tray-bell" aria-label="Notifications">
+            🔔<span id="notif-badge" class="notif-badge">0</span>
+          </button>
+          <span id="hud-clock" class="tray-clock">--:--</span>
+        </div>
+      </div>
+
+      <!-- Mobile quick launch bar -->
+      <div id="mobile-quickbar" class="mobile-quickbar" role="navigation" aria-label="Quick launch"></div>
+
+      <!-- Full-screen overlay for day intro / summary -->
+      <div id="overlay" class="overlay" aria-live="polite"></div>
+    </div>
+
+    <a class="back-link" href="../">&larr; Back to games</a>
+
+    <script src="js/data.js"></script>
+    <script src="js/audio.js"></script>
+    <script src="js/windows.js"></script>
+    <script src="js/game.js"></script>
+    <script src="js/apps.js"></script>
+    <script src="js/main.js"></script>
+  </body>
+</html>
