@@ -181,20 +181,85 @@ function draw() {
         (Math.floor(i / 4) % 2 === 0 ? " group" : "") +
         ["", " on", " on accent", " on soft"][t.hits[i]];
       b.dataset.step = i;
+      b.dataset.track = r;
       b.setAttribute(
         "aria-label",
         `${names[r]}, step ${i + 1}: ${["off", "normal", "accent", "soft"][t.hits[i]]}`,
       );
       b.setAttribute("aria-pressed", String(!!t.hits[i]));
-      b.onclick = () => {
-        t.hits[i] = (t.hits[i] + 1) % 4;
-        draw();
+      // Native keyboard activation has no pointer gesture.
+      b.onclick = (event) => {
+        if (event.detail !== 0) return;
+        editStep(b, false, event.shiftKey);
         persist();
       };
       row.append(b);
     }
     matrix.append(row);
   });
+}
+// Delegate pointer gestures so the pointer stays captured while editing cells.
+let gesture = null;
+let lastTap = null;
+function editStep(button, clear = false, velocity = false) {
+  const r = Number(button.dataset.track);
+  const i = Number(button.dataset.step);
+  const track = state.tracks[r];
+  track.hits[i] = clear ? 0 : velocity ? (track.hits[i] + 1) % 4 : track.hits[i] ? 0 : 1;
+  const value = track.hits[i];
+  button.classList.toggle("on", value !== 0);
+  button.classList.toggle("accent", value === 2);
+  button.classList.toggle("soft", value === 3);
+  button.setAttribute("aria-pressed", String(value !== 0));
+  button.setAttribute("aria-label", `${names[r]}, step ${i + 1}: ${["off", "normal", "accent", "soft"][value]}`);
+}
+function visitStep(button) {
+  if (!button || !$("matrix").contains(button)) return;
+  const key = button.dataset.track + ":" + button.dataset.step;
+  if (gesture.visited.has(key)) return;
+  gesture.visited.add(key);
+  editStep(button, false, gesture.velocity);
+}
+$("matrix").addEventListener("pointerdown", (event) => {
+  const button = event.target.closest(".step");
+  if (!button || gesture || event.button !== 0 || !event.isPrimary) return;
+  event.preventDefault();
+  button.focus({ preventScroll: true });
+  const key = button.dataset.track + ":" + button.dataset.step;
+  const doubleTap = lastTap && lastTap.key === key && performance.now() - lastTap.time < 350;
+  gesture = { id: event.pointerId, visited: new Set(), velocity: event.shiftKey,
+    x: event.clientX, y: event.clientY, startX: event.clientX, startY: event.clientY,
+    key, moved: false, doubleTap };
+  $("matrix").setPointerCapture(event.pointerId);
+  if (doubleTap) {
+    editStep(button, true);
+    gesture.visited.add(key);
+  } else visitStep(button);
+});
+$("matrix").addEventListener("pointermove", (event) => {
+  if (!gesture || gesture.id !== event.pointerId) return;
+  event.preventDefault();
+  if (Math.hypot(event.clientX - gesture.startX, event.clientY - gesture.startY) > 6) gesture.moved = true;
+  if (!gesture.moved) return;
+  // Sample the whole segment so quick swipes do not skip narrow cells.
+  const dx = event.clientX - gesture.x, dy = event.clientY - gesture.y;
+  const count = Math.max(1, Math.ceil(Math.hypot(dx, dy) / 8));
+  for (let n = 1; n <= count; n++) {
+    const element = document.elementFromPoint(gesture.x + dx * n / count, gesture.y + dy * n / count);
+    visitStep(element?.closest(".step"));
+  }
+  gesture.x = event.clientX;
+  gesture.y = event.clientY;
+});
+function finishGesture(event) {
+  if (!gesture || gesture.id !== event.pointerId) return;
+  lastTap = event.type === "pointerup" && !gesture.moved && !gesture.doubleTap
+    ? { key: gesture.key, time: performance.now() } : null;
+  gesture = null;
+  persist();
+}
+for (const type of ["pointerup", "pointercancel", "lostpointercapture"]) {
+  $("matrix").addEventListener(type, finishGesture);
 }
 function sync() {
   for (const k of [
